@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sísifo na Montanha Flappy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #game-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            display: flex;
+        }
+
+        .game-container {
+            position: relative;
+            width: 50%;
+            height: 100%;
+            background-image: url("images/montanha.jpg");
+            background-size: cover;
+            background-position: center;
+        }
+
+        #game-container-2 {
+            transform: scaleX(-1);
+        }
+
+        #sisifo, #pedra {
+            position: absolute;
+            transform-origin: center bottom;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #sisifo {
+            width: 15vw;
+            max-width: 150px;
+            z-index: 2;
+        }
+
+        #pedra {
+            width: 20vw;
+            max-width: 200px;
+            z-index: 1;
+        }
+        
+        #placar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            font-family: sans-serif;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        #mensagem-inicio {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 11;
+            color: white;
+            font-size: 24px;
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <div id="game-container-1" class="game-container"></div>
+        <div id="game-container-2" class="game-container"></div>
+    </div>
+    
+    <img id="sisifo" src="images/sisifo.png" alt="Sísifo" draggable="false" />
+    <img id="pedra" src="images/pedra.png" alt="Pedra" draggable="false" />
+    <div id="placar">Montanhas Conquistadas: 0</div>
+    <div id="mensagem-inicio">Clique e segure para empurrar. Solte para cair.</div>
+    
+    <script>
+        // Elementos do DOM
+        const gameWrapper = document.getElementById('game-wrapper');
+        const sisifo = document.getElementById('sisifo');
+        const pedra = document.getElementById('pedra');
+        const placar = document.getElementById('placar');
+        const mensagemInicio = document.getElementById('mensagem-inicio');
+
+        // Estado do Jogo
+        let progresso = 0;
+        let velocidade = 0;
+        let isPlaying = false;
+        let isPushing = false;
+        let montanhasConquistadas = 0;
+        let fundoOffsetX = 0;
+        let gameWidth = window.innerWidth;
+        let gameHeight = window.innerHeight;
+        let isRollingBack = false; // Novo estado para a rolagem de volta
+
+        // Constantes do jogo
+        const GRAVIDADE = 0.0005;
+        const IMPULSO = 0.003;
+        const VELOCIDADE_CENARIO = 0.5;
+        const VELOCIDADE_ROLAR = 0.005; // Velocidade da pedra rolando de volta
+
+        // Função para definir a trajetória da montanha
+        function calcularPosicaoNaCurva(t) {
+            const largura = gameWidth;
+            const altura = gameHeight;
+            const x = largura * (0.3 + 0.45 * Math.sin(t * Math.PI / 2));
+            const y = altura * (0.05 + 0.75 * Math.pow(t, 3.5));
+            const escala = 0.8 - t * 0.2;
+            return { x, y, escala };
+        }
+
+        // Função para renderizar Sísifo e a Pedra
+        function renderizar() {
+            const { x, y, escala } = calcularPosicaoNaCurva(progresso);
+            
+            // Posição da pedra (seguindo a curva)
+            pedra.style.left = `${x - fundoOffsetX}px`;
+            pedra.style.bottom = `${y}px`;
+            pedra.style.transform = `scale(${escala})`;
+
+            // Posição de Sísifo
+            const offsetSisifoPedraX = sisifo.offsetWidth * escala * 0.5;
+            const offsetSisifoPedraY = sisifo.offsetHeight * escala * 0.3;
+            sisifo.style.left = `${x - fundoOffsetX - offsetSisifoPedraX}px`;
+            sisifo.style.bottom = `${y - offsetSisifoPedraY}px`;
+            sisifo.style.transform = `scale(${escala})`;
+
+            // Ajuste para Sísifo durante a rolagem de volta
+            if (isRollingBack) {
+                // Sísifo fica no topo, vendo a pedra cair
+                sisifo.style.left = `${calcularPosicaoNaCurva(1).x - fundoOffsetX - offsetSisifoPedraX}px`;
+                sisifo.style.bottom = `${calcularPosicaoNaCurva(1).y - offsetSisifoPedraY}px`;
+            }
+        }
+
+        // Lógica da Animação principal
+        function animar() {
+            if (!isPlaying) {
+                return;
+            }
+            
+            if (isRollingBack) {
+                // A pedra rola para trás
+                progresso -= VELOCIDADE_ROLAR;
+                if (progresso <= 0) {
+                    gameOver();
+                    return;
+                }
+            } else {
+                // Lógica normal de empurrar/cair
+                if (isPushing) {
+                    velocidade += IMPULSO;
+                } else {
+                    velocidade -= GRAVIDADE;
+                }
+                
+                velocidade = Math.min(velocidade, 0.01);
+                velocidade = Math.max(velocidade, -0.01);
+                progresso += velocidade;
+            }
+
+            // Movimento do cenário
+            fundoOffsetX += VELOCIDADE_CENARIO;
+            if (fundoOffsetX >= gameWidth) {
+                fundoOffsetX = 0;
+            }
+            gameWrapper.style.left = `-${fundoOffsetX}px`;
+
+            // Verificação de vitória ou derrota
+            if (progresso >= 1 && !isRollingBack) {
+                // Sísifo chegou ao topo, agora a pedra rola de volta
+                montanhasConquistadas++;
+                placar.textContent = `Montanhas Conquistadas: ${montanhasConquistadas}`;
+                
+                isRollingBack = true;
+                isPushing = false;
+                velocidade = 0; // Zera a velocidade para o início da rolagem
+            } else if (progresso <= 0) {
+                // Game over se a dupla rolar até o início
+                gameOver();
+                return;
+            }
+
+            // Garante que o progresso não passe dos limites
+            progresso = Math.max(0, Math.min(progresso, 1));
+
+            renderizar();
+            window.requestAnimationFrame(animar);
+        }
+
+        function iniciarJogo() {
+            if (!isPlaying) {
+                isPlaying = true;
+                isRollingBack = false;
+                montanhasConquistadas = 0;
+                progresso = 0.1;
+                velocidade = 0;
+                placar.textContent = `Montanhas Conquistadas: 0`;
+                mensagemInicio.style.display = 'none';
+                animar();
+            }
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            isPushing = false;
+            isRollingBack = false;
+            mensagemInicio.textContent = `Fim de jogo! Você passou por ${montanhasConquistadas} montanhas. Clique e segure para tentar de novo.`;
+            mensagemInicio.style.display = 'block';
+        }
+
+        // Eventos para mouse e teclado
+        document.addEventListener("mousedown", () => {
+            if (isPlaying && !isRollingBack) {
+                isPushing = true;
+            } else if (!isPlaying) {
+                iniciarJogo();
+            }
+        });
+
+        document.addEventListener("mouseup", () => {
+            isPushing = false;
+        });
+
+        document.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (isPlaying && !isRollingBack) {
+                isPushing = true;
+            } else if (!isPlaying) {
+                iniciarJogo();
+            }
+        });
+
+        document.addEventListener("touchend", (e) => {
+            e.preventDefault();
+            isPushing = false;
+        });
+        
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space" || e.code === "ArrowUp") {
+                if (isPlaying && !isRollingBack) {
+                    isPushing = true;
+                } else if (!isPlaying) {
+                    iniciarJogo();
+                }
+            }
+        });
+
+        document.addEventListener("keyup", (e) => {
+            if (e.code === "Space" || e.code === "ArrowUp") {
+                isPushing = false;
+            }
+        });
+
+        // Evento de redimensionamento da janela
+        window.addEventListener('resize', () => {
+            gameWidth = window.innerWidth;
+            gameHeight = window.innerHeight;
+            renderizar();
+        });
+
+        // Inicia o jogo ao carregar a página
+        window.requestAnimationFrame(animar);
+    </script>
+</body>
+</html>
