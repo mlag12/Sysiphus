@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sísifo na Montanha - Desafio da Queda</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: sans-serif;
+            color: white;
+            text-shadow: 2px 2px 4px #000;
+            
+            background-image: url('images/montanha.jpg');
+            background-size: 200vw 100vh;
+            background-repeat: repeat-x;
+            background-position: left bottom;
+            
+            transition: background-image 2s ease-in-out;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #sisifo, #pedra {
+            position: absolute;
+            z-index: 3;
+            transform-origin: center bottom;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        #sisifo {
+            height: 15vh;
+            z-index: 4;
+        }
+
+        #pedra {
+            height: 20vh;
+            z-index: 3;
+        }
+
+        #placar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        #mensagem-inicio {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            z-index: 11;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <img id="sisifo" src="images/sisifo.png" alt="Sísifo">
+        <img id="pedra" src="images/pedra.png" alt="Pedra">
+    </div>
+
+    <div id="placar">Montanhas: 0</div>
+    <div id="mensagem-inicio">
+        Clique ou pressione ESPAÇO para começar. <br>
+        Sísifo empurrará a pedra montanha acima.
+    </div>
+
+    <script>
+        const sisifo = document.getElementById('sisifo');
+        const pedra = document.getElementById('pedra');
+        const placar = document.getElementById('placar');
+        const mensagemInicio = document.getElementById('mensagem-inicio');
+        const body = document.body;
+
+        let progresso = 0;
+        let velocidade = 0;
+        let vitorias = 0;
+        let lastTime = 0;
+        let tempoCume = 0;
+        const duracaoCume = 2000;
+
+        let deslocamentoFundo = 0;
+        let movimentoAtivo = false;
+        let sisifoCumePosition = null;
+        let progressoQueda = 0;
+        let velocidadeQueda = 0;
+
+        const ESTADOS = {
+            INICIO: 'inicio',
+            MOVENDO_PARA_MONTANHA: 'movendo',
+            SUBINDO: 'subindo',
+            CUME: 'cume',
+            OBSERVANDO_QUEDA: 'observando'
+        };
+        let estadoAtual = ESTADOS.INICIO;
+
+        // Propriedades do movimento
+        const ACELERACAO_HORIZONTAL = 0.002;
+        const GRAVIDADE_PEDRA = 0.0001;
+        const FATOR_ATRITO = 0.98;
+
+        // Propriedades do movimento horizontal
+        const POSICAO_INICIAL_X = window.innerWidth * 0.1;
+        const POSICAO_FIM_X = window.innerWidth * 0.2;
+        const ALTURA_CHAO = window.innerHeight * 0.1;
+        const POSICAO_FINAL_QUEDA = window.innerHeight * 0.1;
+
+        let posicaoAtualX = POSICAO_INICIAL_X;
+        let velocidadeHorizontal = 0;
+
+        function getPointOnCurve(t, p0, p1, p2) {
+            const x1 = p0.x + t * (p1.x - p0.x);
+            const y1 = p0.y + t * (p1.y - p0.y);
+            const x2 = p1.x + t * (p2.x - p1.x);
+            const y2 = p1.y + t * (p2.y - p1.y);
+            const x = x1 + t * (x2 - x1);
+            const y = y1 + t * (y2 - y1);
+            return { x, y };
+        }
+
+        let pathSubida;
+        let pathCume;
+        let pathQueda;
+
+        function updatePaths() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            pathSubida = {
+                p0: { x: POSICAO_FIM_X, y: ALTURA_CHAO },
+                p1: { x: width * 0.35, y: height * 0.65 },
+                p2: { x: width * 0.45, y: height * 0.77 }
+            };
+
+            pathCume = {
+                p0: pathSubida.p2,
+                p1: { x: width * 0.5, y: height * 0.8 },
+                p2: { x: width * 0.55, y: height * 0.78 }
+            };
+
+            pathQueda = {
+                p0: pathCume.p2,
+                p1: { x: width * 0.65, y: height * 0.65 },
+                p2: { x: width * 0.9, y: ALTURA_CHAO }
+            };
+        }
+
+        /**
+         * Altera a imagem de fundo do corpo do documento.
+         * @param {string} imageUrl - O caminho para a nova imagem de fundo.
+         */
+        function setBackgroundImage(imageUrl) {
+            body.style.backgroundImage = `url('${imageUrl}')`;
+        }
+
+        function render() {
+            let sisifoPosition;
+            let pedraPosition;
+
+            let fundoProgressao = 0;
+            if (estadoAtual === ESTADOS.MOVENDO_PARA_MONTANHA) {
+                fundoProgressao = (posicaoAtualX - POSICAO_INICIAL_X) / (POSICAO_FIM_X - POSICAO_INICIAL_X);
+            } else if (estadoAtual === ESTADOS.SUBINDO) {
+                fundoProgressao = progresso;
+            } else if (estadoAtual === ESTADOS.CUME || estadoAtual === ESTADOS.OBSERVANDO_QUEDA) {
+                fundoProgressao = 1;
+            }
+
+            body.style.backgroundPositionX = `-${(deslocamentoFundo + fundoProgressao) * 100}vw`;
+
+            if (estadoAtual === ESTADOS.MOVENDO_PARA_MONTANHA) {
+                sisifoPosition = { x: posicaoAtualX, y: ALTURA_CHAO };
+                pedraPosition = { x: posicaoAtualX, y: ALTURA_CHAO + sisifo.offsetHeight * 0.5 - pedra.offsetHeight * 0.2 };
+
+                sisifo.style.left = `${sisifoPosition.x - sisifo.offsetWidth * 0.5}px`;
+                sisifo.style.bottom = `${sisifoPosition.y - sisifo.offsetHeight * 0.5}px`;
+                pedra.style.left = `${pedraPosition.x - pedra.offsetWidth * 0.5}px`;
+                pedra.style.bottom = `${pedraPosition.y}px`;
+
+            } else if (estadoAtual === ESTADOS.SUBINDO) {
+                sisifoPosition = getPointOnCurve(progresso, pathSubida.p0, pathSubida.p1, pathSubida.p2);
+                sisifo.style.left = `${sisifoPosition.x - sisifo.offsetWidth * 0.5}px`;
+                sisifo.style.bottom = `${sisifoPosition.y - sisifo.offsetHeight * 0.5}px`;
+
+                pedraPosition = {
+                    x: sisifoPosition.x,
+                    y: sisifoPosition.y + sisifo.offsetHeight * 0.5 - pedra.offsetHeight * 0.2
+                };
+                pedra.style.left = `${pedraPosition.x - pedra.offsetWidth * 0.5}px`;
+                pedra.style.bottom = `${pedraPosition.y}px`;
+                pedra.style.transform = `rotate(${progresso * 360 * 3}deg)`;
+
+            } else if (estadoAtual === ESTADOS.CUME) {
+                sisifoPosition = getPointOnCurve(progresso, pathCume.p0, pathCume.p1, pathCume.p2);
+                sisifo.style.left = `${sisifoPosition.x - sisifo.offsetWidth * 0.5}px`;
+                sisifo.style.bottom = `${sisifoPosition.y - sisifo.offsetHeight * 0.5}px`;
+
+                pedraPosition = {
+                    x: sisifoPosition.x,
+                    y: sisifoPosition.y + sisifo.offsetHeight * 0.5 - pedra.offsetHeight * 0.2
+                };
+                pedra.style.left = `${pedraPosition.x - pedra.offsetWidth * 0.5}px`;
+                pedra.style.bottom = `${pedraPosition.y}px`;
+                pedra.style.transform = `rotate(0deg)`;
+
+            } else if (estadoAtual === ESTADOS.OBSERVANDO_QUEDA) {
+                sisifo.style.left = `${sisifoCumePosition.x - sisifo.offsetWidth * 0.5}px`;
+                sisifo.style.bottom = `${sisifoCumePosition.y - sisifo.offsetHeight * 0.5}px`;
+
+                pedraPosition = getPointOnCurve(progressoQueda, pathQueda.p0, pathQueda.p1, pathQueda.p2);
+                pedra.style.left = `${pedraPosition.x - pedra.offsetWidth * 0.5}px`;
+                pedra.style.bottom = `${pedraPosition.y - pedra.offsetHeight * 0.5}px`;
+                pedra.style.transform = `rotate(${progressoQueda * 360 * 5}deg)`;
+            }
+        }
+
+        function gameLoop(time) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            if (estadoAtual === ESTADOS.INICIO) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            if (estadoAtual === ESTADOS.MOVENDO_PARA_MONTANHA) {
+                if (movimentoAtivo) {
+                    velocidadeHorizontal += ACELERACAO_HORIZONTAL;
+                }
+                velocidadeHorizontal *= FATOR_ATRITO;
+                posicaoAtualX += velocidadeHorizontal * deltaTime;
+                
+                if (posicaoAtualX >= POSICAO_FIM_X) {
+                    posicaoAtualX = POSICAO_FIM_X;
+                    estadoAtual = ESTADOS.SUBINDO;
+                }
+            } else if (estadoAtual === ESTADOS.SUBINDO) {
+                if (movimentoAtivo) {
+                    velocidade += ACELERACAO_HORIZONTAL;
+                }
+                velocidade *= FATOR_ATRITO;
+                progresso += velocidade * deltaTime;
+                progresso = Math.max(0, Math.min(progresso, 1));
+
+                if (progresso >= 1) {
+                    vitorias++;
+                    placar.textContent = `Montanhas: ${vitorias}`;
+                    estadoAtual = ESTADOS.CUME;
+                    progresso = 0;
+                    velocidade = 0;
+                    tempoCume = 0;
+                }
+            } else if (estadoAtual === ESTADOS.CUME) {
+                tempoCume += deltaTime;
+                progresso = tempoCume / duracaoCume;
+                if (progresso >= 1) {
+                    estadoAtual = ESTADOS.OBSERVANDO_QUEDA;
+                    progressoQueda = 0;
+                    velocidadeQueda = 0;
+                    sisifoCumePosition = getPointOnCurve(1, pathCume.p0, pathCume.p1, pathCume.p2);
+                    setBackgroundImage('images/montanha2.jpg');
+                }
+            } else if (estadoAtual === ESTADOS.OBSERVANDO_QUEDA) {
+                velocidadeQueda += GRAVIDADE_PEDRA * deltaTime;
+                progressoQueda += velocidadeQueda * deltaTime;
+
+                const pedraPosition = getPointOnCurve(progressoQueda, pathQueda.p0, pathQueda.p1, pathQueda.p2);
+                if (pedraPosition.y <= POSICAO_FINAL_QUEDA) {
+                    recomecarCiclo();
+                }
+            }
+
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            if (estadoAtual !== ESTADOS.INICIO) return;
+            estadoAtual = ESTADOS.MOVENDO_PARA_MONTANHA;
+            vitorias = 0;
+            progresso = 0;
+            velocidadeHorizontal = 0;
+            posicaoAtualX = POSICAO_INICIAL_X;
+            mensagemInicio.style.display = 'none';
+            placar.textContent = `Montanhas: ${vitorias}`;
+            updatePaths();
+            lastTime = performance.now();
+            movimentoAtivo = true;
+            setBackgroundImage('images/montanha.jpg');
+            requestAnimationFrame(gameLoop);
+        }
+
+        function recomecarCiclo() {
+            estadoAtual = ESTADOS.MOVENDO_PARA_MONTANHA;
+            progresso = 0;
+            velocidade = 0;
+            posicaoAtualX = POSICAO_INICIAL_X;
+            deslocamentoFundo = 0;
+            velocidadeHorizontal = 0;
+            movimentoAtivo = false;
+            updatePaths();
+            setBackgroundImage('images/montanha.jpg');
+        }
+
+        function gameOver() {
+            estadoAtual = ESTADOS.INICIO;
+            progresso = 0;
+            velocidade = 0;
+            posicaoAtualX = POSICAO_INICIAL_X;
+            deslocamentoFundo = 0;
+            movimentoAtivo = false;
+            mensagemInicio.textContent = `Fim de jogo! Você passou por ${vitorias} montanhas. Clique para tentar de novo.`;
+            mensagemInicio.style.display = 'block';
+            body.style.backgroundPositionX = '0px';
+            render();
+        }
+
+        function handlePush() {
+            if (estadoAtual === ESTADOS.INICIO) {
+                startGame();
+            } else if (estadoAtual === ESTADOS.MOVENDO_PARA_MONTANHA || estadoAtual === ESTADOS.SUBINDO) {
+                movimentoAtivo = true;
+            }
+        }
+
+        document.addEventListener('mousedown', handlePush);
+        document.addEventListener('touchstart', (e) => { e.preventDefault(); handlePush(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') handlePush();
+        });
+
+        window.onload = () => {
+            updatePaths();
+            sisifo.style.left = `${POSICAO_INICIAL_X - sisifo.offsetWidth * 0.5}px`;
+            sisifo.style.bottom = `${ALTURA_CHAO - sisifo.offsetHeight * 0.5}px`;
+            pedra.style.left = `${POSICAO_INICIAL_X - pedra.offsetWidth * 0.5}px`;
+            pedra.style.bottom = `${ALTURA_CHAO + sisifo.offsetHeight * 0.5 - pedra.offsetHeight * 0.2}px`;
+            render();
+            gameLoop(0);
+        };
+    </script>
+</body>
+</html>
