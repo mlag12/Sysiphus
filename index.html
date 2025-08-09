@@ -243,22 +243,28 @@ function aplicarQuique(yPos){
    ===========================*/
 let last = performance.now();
 
-function desenharFundo(shiftPx) {
-  // shiftPx: 0..bgState.maxShift (move background para a esquerda)
+function desenharFundo() {
   if(!IMG_BG.width) return;
-  const s = bgState.scale;
-  const dw = bgState.bgW;
-  const dh = bgState.bgH;
-  // desenhar com offset: imagem centrada verticalmente (center align)
-  const baseLeft = - (dw - canvas.width) / 2;
-  const dx = baseLeft - shiftPx; // deslocar imagem para a esquerda ao aumentar shiftPx
-  const dy = (canvas.height - dh) / 2; // centraliza verticalmente
-  ctx.drawImage(IMG_BG, dx, dy, dw, dh);
+  const cw = canvas.width, ch = canvas.height;
+
+  // Escala para cobrir a tela inteira
+  const scale = Math.max(cw / IMG_BG.width, ch / IMG_BG.height);
+
+  // Tamanho da imagem escalada
+  const sw = cw / scale;
+  const sh = ch / scale;
+
+  // Cortar parte central da imagem para centralizar
+  const sx = (IMG_BG.width - sw) / 2;
+  const sy = (IMG_BG.height - sh) / 2;
+
+  ctx.drawImage(IMG_BG, sx, sy, sw, sh, 0, 0, cw, ch);
 }
 
-function loop(now) {
-  const dt = Math.min(40, now - last);
-  last = now;
+
+function loop() {
+  desenharFundo();
+
 
   // --- lógica de estados ---
   if(estado === ESTADOS.MOVENDO) {
