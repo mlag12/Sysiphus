@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sísifo na Montanha</title>
+<style>
+  html,body {
+    height:100%;
+    margin:0;
+    background:#000;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow: hidden;
+  }
+  #game {
+    display:block;
+    width:100vw;
+    height:100vh;
+  }
+  #placar {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-weight: 700;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 3px black;
+    z-index: 10;
+  }
+  #botao-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+  #botao-empurrar {
+    background: linear-gradient(135deg,#ff004d,#ffb347);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #ff004d;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    user-select: none;
+  }
+  #botao-empurrar:active {
+    transform: translateY(2px);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div id="placar">Montanhas: 0</div>
+<div id="botao-container"><button id="botao-empurrar">Empurrar</button></div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const IMG_BG = new Image();
+IMG_BG.src = '/mnt/data/bd500133-9533-4c09-8ab4-ce055b0e401c.png'; // Seu fundo carregado via upload
+
+// IMPORTANTE: você deve substituir esses paths pelas suas imagens locais.
+// Aqui estou colocando um exemplo genérico, adapte para seu ambiente:
+const IMG_SISIFO = new Image();
+IMG_SISIFO.src = 'images/sisifo.png'; // imagem do Sísifo
+
+const IMG_PEDRA = new Image();
+IMG_PEDRA.src = 'images/pedra.png'; // imagem da pedra
+
+const placarEl = document.getElementById('placar');
+const botao = document.getElementById('botao-empurrar');
+
+let montanhas = 0;
+let movimentoAtivo = false;
+
+botao.addEventListener('mousedown', () => pressionar());
+botao.addEventListener('touchstart', e => { e.preventDefault(); pressionar(); }, {passive:false});
+botao.addEventListener('mouseup', () => soltar());
+botao.addEventListener('touchend', e => { e.preventDefault(); soltar(); }, {passive:false});
+
+function pressionar() {
+  if (estado === ESTADOS.PARADO) iniciarCiclo();
+  movimentoAtivo = true;
+}
+function soltar() {
+  movimentoAtivo = false;
+}
+
+// Curvas em % da tela (de acordo com sua imagem)
+// Curva Vermelha (subida)
+const curvaSubidaPct = [
+  {x: 0.04, y: 0.87},
+  {x: 0.15, y: 0.58},
+  {x: 0.32, y: 0.36},
+  {x: 0.5, y: 0.22}
+];
+
+// Curva Azul (queda da pedra)
+const curvaQuedaPct = [
+  {x: 0.5, y: 0.22},
+  {x: 0.65, y: 0.37},
+  {x: 0.8, y: 0.63},
+  {x: 0.94, y: 0.92}
+];
+
+// Converter % para px
+function pctToPx(pctArr) {
+  return pctArr.map(p => ({ x: p.x * canvas.width, y: p.y * canvas.height }));
+}
+
+let curvaSubida = pctToPx(curvaSubidaPct);
+let curvaQueda = pctToPx(curvaQuedaPct);
+
+window.addEventListener('resize', () => {
+  curvaSubida = pctToPx(curvaSubidaPct);
+  curvaQueda = pctToPx(curvaQuedaPct);
+});
+
+// Bézier cúbica (Casteljau)
+function cubicBezierPoint(t, p0, p1, p2, p3) {
+  const lerp = (a,b,t) => ({x:a.x + (b.x - a.x)*t, y: a.y + (b.y - a.y)*t});
+  const a = lerp(p0,p1,t);
+  const b = lerp(p1,p2,t);
+  const c = lerp(p2,p3,t);
+  const d = lerp(a,b,t);
+  const e = lerp(b,c,t);
+  return lerp(d,e,t);
+}
+
+// Estados
+const ESTADOS = { PARADO:0, SUBINDO:1, PAUSA:2, QUEDA:3 };
+let estado = ESTADOS.PARADO;
+
+let progressoSubida = 0;
+let velSubida = 0;
+
+let progressoQueda = 0;
+let velQueda = 0;
+
+const maxVelSubida = 0.0028;
+const aceleracaoSubida = 0.0009;
+const desaceleraSubida = 0.92;
+const minVelSubida = 0.00003;
+
+const gravidadeQueda = 0.000012;
+const aceleracaoQuedaInit = 0.0006;
+
+let pausaFrames = 0;
+
+function iniciarCiclo() {
+  if (estado !== ESTADOS.PARADO) return;
+  estado = ESTADOS.SUBINDO;
+  progressoSubida = 0;
+  velSubida = 0.001;
+  progressoQueda = 0;
+  velQueda = 0;
+  movimentoAtivo = true;
+}
+
+function reiniciarParaParado() {
+  montanhas++;
+  estado = ESTADOS.PARADO;
+  progressoSubida = 0;
+  velSubida = 0;
+  progressoQueda = 0;
+  velQueda = 0;
+  movimentoAtivo = false;
+}
+
+function loop(now = 0) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Desenhar fundo
+  if (IMG_BG.complete) {
+    // ajustar para cobrir tela inteira
+    let scale = Math.max(canvas.width / IMG_BG.width, canvas.height / IMG_BG.height);
+    let bw = IMG_BG.width * scale;
+    let bh = IMG_BG.height * scale;
+    ctx.drawImage(IMG_BG, (canvas.width - bw)/2, (canvas.height - bh)/2, bw, bh);
+  }
+
+  // Lógica de estados
+  if (estado === ESTADOS.SUBINDO) {
+    if (movimentoAtivo) {
+      velSubida += aceleracaoSubida * 16;
+      if (velSubida > maxVelSubida) velSubida = maxVelSubida;
+    } else {
+      velSubida *= desaceleraSubida;
+      if (velSubida < minVelSubida) velSubida = 0;
+    }
+    progressoSubida += velSubida * 16;
+    if (progressoSubida >= 1) {
+      progressoSubida = 1;
+      estado = ESTADOS.PAUSA;
+      pausaFrames = 60 * 1; // 1 segundo de pausa
+      velQueda = aceleracaoQuedaInit;
+    }
+  } else if (estado === ESTADOS.PAUSA) {
+    pausaFrames--;
+    if (pausaFrames <= 0) {
+      estado = ESTADOS.QUEDA;
+    }
+  } else if (estado === ESTADOS.QUEDA) {
+    velQueda += gravidadeQueda * 16;
+    progressoQueda += velQueda * 16;
+    if (progressoQueda >= 1) {
+      progressoQueda = 1;
+      setTimeout(reiniciarParaParado, 300);
+    }
+  }
+
+  // Posição do Sísifo na curva vermelha (subida)
+  if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA || estado === ESTADOS.PARADO) {
+    let posSisifo = cubicBezierPoint(progressoSubida, ...curvaSubida);
+    const sisW = canvas.width * 0.1;
+    const sisH = sisW * 1.3; // proporção aproximada da imagem do Sísifo
+
+    // Desenha Sísifo centrado na curva e alinhado pelo pé (posição y ajustada para que fique em pé)
+    let sisX = posSisifo.x - sisW/2;
+    let sisY = posSisifo.y - sisH + 10; // +10 para ajuste do pé na linha
+
+    if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sisX, sisY, sisW, sisH);
+
+    // Pedra acompanhando "mãos do Sísifo" (offset e inclinação)
+    const pedW = sisW * 0.6;
+    const pedH = pedW * 1.0;
+    const offsetX = -pedW * 0.4; // ajusta para esquerda
+    const offsetY = -pedH * 0.9; // acima da cabeça
+
+    const pedX = posSisifo.x + offsetX;
+    const pedY = posSisifo.y + offsetY;
+
+    const angulo = -0.3; // -17 graus em rad
+
+    ctx.save();
+    ctx.translate(pedX + pedW / 2, pedY + pedH / 2);
+    ctx.rotate(angulo);
+    if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH);
+    ctx.restore();
+  }
+
+  // Pedra na queda, na curva azul (rente ao morro)
+  if (estado === ESTADOS.QUEDA) {
+    let posPedra = cubicBezierPoint(progressoQueda, ...curvaQueda);
+    const pedW = canvas.width * 0.06;
+    const pedH = pedW * 1.0;
+
+    // Para deixar rente ao morro, um pequeno ajuste para baixo (5px)
+    let pedX = posPedra.x - pedW / 2;
+    let pedY = posPedra.y - pedH / 2 + 5;
+
+    // Pedra girando na queda
+    let rot = progressoQueda * Math.PI * 6;
+
+    ctx.save();
+    ctx.translate(pedX + pedW / 2, pedY + pedH / 2);
+    ctx.rotate(rot);
+    if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH);
+    ctx.restore();
+  }
+
+  placarEl.textContent = `Montanhas: ${montanhas}`;
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+
+</script>
+
+</body>
+</html>
