@@ -101,6 +101,7 @@ function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
+
 window.addEventListener('resize', resize);
 resize();
 
@@ -193,14 +194,16 @@ function cubicBezierPoint(t, p0, p1, p2, p3){
 let bgState = { scale:1, bgW:0, bgH:0, maxShift:0 };
 
 function recalcBg() {
-  if(!IMG_BG.width) return;
+  if (!IMG_BG.width) return;
   const cw = canvas.width, ch = canvas.height;
-  const scale = Math.min(cw / IMG_BG.width, ch / IMG_BG.height); // contain (imagem inteira na tela)
+  // scale para cobrir toda a tela (cover)
+  const scale = Math.max(cw / IMG_BG.width, ch / IMG_BG.height);
   const bgW = IMG_BG.width * scale;
   const bgH = IMG_BG.height * scale;
-  const maxShift = Math.max(0, bgW - cw); // quanto podemos deslocar horizontalmente
+  const maxShift = Math.max(0, bgW - cw);
   bgState = { scale, bgW, bgH, maxShift };
 }
+
 
 // quando bg carregar ou a janela for redimensionada, recalcula
 IMG_BG.addEventListener('load', recalcBg);
