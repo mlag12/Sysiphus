@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sísifo na Montanha</title>
+<style>
+  :root {
+    --btn-bg: linear-gradient(135deg,#ff004d,#ffb347);
+    --btn-border: #000;
+  }
+  html,body {
+    height:100%;
+    margin:0;
+    background:#000;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+
+  /* canvas ocupa toda a tela */
+  #game {
+    display:block;
+    width:100vw;
+    height:100vh;
+  }
+
+  /* placar / UI */
+  #ui {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+  }
+  #placar {
+    position:absolute;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    color:#fff;
+    text-shadow:2px 2px 6px rgba(0,0,0,0.8);
+    font-weight:800;
+    font-size:1.8rem;
+    pointer-events:none;
+    z-index:10;
+  }
+  #botao-container {
+    position:fixed;
+    bottom:26px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:20;
+    pointer-events:auto;
+  }
+  #botao-empurrar {
+    padding:12px 20px;
+    border-radius:12px;
+    border:3px solid var(--btn-border);
+    background:var(--btn-bg);
+    color:#ff004d;
+    font-weight:900;
+    letter-spacing:2px;
+    cursor:pointer;
+    font-family:'Courier New', monospace;
+    font-size:1.05rem;
+    user-select:none;
+  }
+  #botao-empurrar:active { transform: translateY(1px); }
+
+  /* legendas para debug (invisível por padrão) */
+  #debug {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    color: rgba(255,255,255,0.8);
+    font-size:0.9rem;
+    z-index:10;
+    pointer-events:none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="ui">
+  <div id="placar">Montanhas: 0</div>
+  <div id="debug" style="display:none"></div>
+  <div id="botao-container">
+    <button id="botao-empurrar">Empurrar</button>
+  </div>
+</div>
+
+<script>
+/* ===========================
+   Config e recursos
+   ===========================*/
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// imagens (coloque nas pastas informadas)
+const IMG_BG = new Image();
+IMG_BG.src = 'images/montanha.jpg';
+const IMG_SISIFO = new Image();
+IMG_SISIFO.src = 'images/sisifo.png';
+const IMG_PEDRA = new Image();
+IMG_PEDRA.src = 'images/pedra.png';
+
+// UI
+const placarEl = document.getElementById('placar');
+const debugEl = document.getElementById('debug');
+const botao = document.getElementById('botao-empurrar');
+
+/* ===========================
+   Estados e parâmetros
+   ===========================*/
+const ESTADOS = { PARADO:0, MOVENDO:1, SUBINDO:2, PAUSA:3, QUEDA:4 };
+let estado = ESTADOS.PARADO;
+
+let montanhas = 0;
+
+// controle do botão (segurar para empurrar)
+let movimentoAtivo = false;
+botao.addEventListener('mousedown', e=>{ e.preventDefault(); pressionar(); });
+botao.addEventListener('touchstart', e=>{ e.preventDefault(); pressionar(); }, {passive:false});
+botao.addEventListener('mouseup', e=>{ e.preventDefault(); soltar(); });
+botao.addEventListener('touchend', e=>{ e.preventDefault(); soltar(); }, {passive:false});
+botao.addEventListener('mouseleave', ()=>{ if(movimentoAtivo) soltar(); });
+
+function pressionar(){
+  if(estado === ESTADOS.PARADO) iniciarCiclo();
+  else if(estado === ESTADOS.MOVENDO || estado === ESTADOS.SUBINDO) movimentoAtivo = true;
+  else if(estado === ESTADOS.QUEDA) reiniciarParaParado();
+}
+function soltar(){ movimentoAtivo = false; }
+
+// teclado (barra de espaço também)
+window.addEventListener('keydown', (ev)=>{
+  if(ev.code === 'Space'){ ev.preventDefault(); pressionar(); }
+});
+window.addEventListener('keyup', (ev)=>{
+  if(ev.code === 'Space'){ ev.preventDefault(); soltar(); }
+});
+
+/* ===========================
+   Curvas (definidas em % da tela)
+   - curvaSubida: vermelho
+   - curvaQueda: azul
+   Ajuste aqui se quiser calibrar pontos.
+   ===========================*/
+const curvaSubidaPct = [
+  {x: 0.06, y: 0.88},  // base esquerda (onde Sisifo começa)
+  {x: 0.18, y: 0.60},
+  {x: 0.36, y: 0.34},
+  {x: 0.50, y: 0.20}   // ponto do cume (verde)
+];
+
+const curvaQuedaPct = [
+  {x: 0.50, y: 0.20},  // cume (onde pedra começa a rolar)
+  {x: 0.65, y: 0.36},
+  {x: 0.80, y: 0.64},
+  {x: 0.95, y: 0.92}   // fora da tela direita/base
+];
+
+// converte percentuais para pixels (novos valores sempre após resize)
+function pctToPx(curvaPct){
+  return curvaPct.map(p => ({ x: p.x * canvas.width, y: p.y * canvas.height }));
+}
+let curvaSubida = pctToPx(curvaSubidaPct);
+let curvaQueda = pctToPx(curvaQuedaPct);
+
+/* ===========================
+   Funções Bézier cúbica (de Casteljau)
+   t em [0,1]
+   ===========================*/
+function cubicBezierPoint(t, p0, p1, p2, p3){
+  // Casteljau
+  const lerp = (a,b,t) => ({ x: a.x + (b.x - a.x)*t, y: a.y + (b.y - a.y)*t });
+  const a = lerp(p0,p1,t), b = lerp(p1,p2,t), c = lerp(p2,p3,t);
+  const d = lerp(a,b,t), e = lerp(b,c,t);
+  return lerp(d,e,t);
+}
+
+/* ===========================
+   Fundo controlável (desenhar background "contain" e centralizar)
+   ===========================*/
+let bgState = { scale:1, bgW:0, bgH:0, maxShift:0 };
+
+function recalcBg() {
+  if(!IMG_BG.width) return;
+  const cw = canvas.width, ch = canvas.height;
+  const scale = Math.min(cw / IMG_BG.width, ch / IMG_BG.height); // contain (imagem inteira na tela)
+  const bgW = IMG_BG.width * scale;
+  const bgH = IMG_BG.height * scale;
+  const maxShift = Math.max(0, bgW - cw); // quanto podemos deslocar horizontalmente
+  bgState = { scale, bgW, bgH, maxShift };
+}
+
+// quando bg carregar ou a janela for redimensionada, recalcula
+IMG_BG.addEventListener('load', recalcBg);
+window.addEventListener('resize', ()=> {
+  recalcBg();
+  curvaSubida = pctToPx(curvaSubidaPct);
+  curvaQueda = pctToPx(curvaQuedaPct);
+});
+
+/* ===========================
+   Parâmetros de movimento (fáceis de ajustar)
+   ===========================*/
+let progressoSubida = 0; // 0..1
+let velSubida = 0;
+let progressoQueda = 0; // 0..1
+let velQueda = 0;
+const maxVelSubida = 0.0028; // quanto mais, mais rápido sobe quando segurando
+const aceleracaoSubida = 0.0009;
+const desaceleraSubida = 0.92;
+
+const aceleracaoQuedaInit = 0.0009;
+const gravidadeQueda = 0.000012; // aumenta a velocidade da pedra na queda
+const minVelSubida = 0.00003;
+
+let pausaFrames = 0; // contagem de frames na pausa do cume
+
+/* ===========================
+   Efeito de quique (quando pedra bate) — simples
+   ===========================*/
+function aplicarQuique(yPos){
+  // pequeno efeito de rebatida visual (retorna y ajustado)
+  return yPos;
+}
+
+/* ===========================
+   Loop principal e render
+   ===========================*/
+let last = performance.now();
+
+function desenharFundo(shiftPx) {
+  // shiftPx: 0..bgState.maxShift (move background para a esquerda)
+  if(!IMG_BG.width) return;
+  const s = bgState.scale;
+  const dw = bgState.bgW;
+  const dh = bgState.bgH;
+  // desenhar com offset: imagem centrada verticalmente (center align)
+  const baseLeft = - (dw - canvas.width) / 2;
+  const dx = baseLeft - shiftPx; // deslocar imagem para a esquerda ao aumentar shiftPx
+  const dy = (canvas.height - dh) / 2; // centraliza verticalmente
+  ctx.drawImage(IMG_BG, dx, dy, dw, dh);
+}
+
+function loop(now) {
+  const dt = Math.min(40, now - last);
+  last = now;
+
+  // --- lógica de estados ---
+  if(estado === ESTADOS.MOVENDO) {
+    estado = ESTADOS.SUBINDO;
+    movimentoAtivo = true;
+  }
+
+  if(estado === ESTADOS.SUBINDO) {
+    if(movimentoAtivo) {
+      velSubida += aceleracaoSubida * dt;
+      if(velSubida > maxVelSubida) velSubida = maxVelSubida;
+    } else {
+      velSubida *= desaceleraSubida;
+      if(velSubida < minVelSubida) velSubida = 0;
+    }
+    progressoSubida += velSubida * dt;
+    progressoSubida = Math.min(1, progressoSubida);
+
+    if(progressoSubida >= 1) {
+      progressoSubida = 1;
+      estado = ESTADOS.PAUSA;
+      pausaFrames = Math.round(0.8 * 60);
+      progressoQueda = 0;
+      velQueda = 0.0006;
+      movimentoAtivo = false;
+    }
+  } else if(estado === ESTADOS.PAUSA) {
+    pausaFrames--;
+    if(pausaFrames <= 0) {
+      estado = ESTADOS.QUEDA;
+    }
+  } else if(estado === ESTADOS.QUEDA) {
+    velQueda += gravidadeQueda * dt;
+    progressoQueda += velQueda * dt;
+    if(progressoQueda >= 1) {
+      progressoQueda = 1;
+      setTimeout(reiniciarParaParado, 300);
+      estado = ESTADOS.PARADO;
+    }
+  }
+
+  // --- desenhar ---
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  recalcBg();
+
+  const shiftPx = progressoSubida * bgState.maxShift;
+  desenharFundo(shiftPx);
+
+  // Sísifo: segue curvaSubida (progressoSubida)
+  if(estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA || estado === ESTADOS.PARADO) {
+    const p = cubicBezierPoint(progressoSubida, curvaSubida[0], curvaSubida[1], curvaSubida[2], curvaSubida[3]);
+    const sisW = Math.max(64, canvas.width * 0.08);
+    const sisH = sisW * (IMG_SISIFO.height ? (IMG_SISIFO.height/IMG_SISIFO.width) : 1.0);
+    const sx = p.x - sisW/2;
+    const sy = p.y - sisH + 6; // alinhamento bottom
+    if(IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
+
+    // opcional: desenhar o ponto verde (cume) quando estiver perto
+    if(progressoSubida >= 0.98) {
+      ctx.beginPath();
+      ctx.fillStyle = '#39ff14';
+      ctx.arc(p.x, p.y - 6, 6, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // pedra inclinada perto das mãos
+    const pedW = Math.max(48, canvas.width * 0.06);
+    const pedH = pedW * (IMG_PEDRA.height ? (IMG_PEDRA.height/IMG_PEDRA.width) : 1.0);
+
+    // deslocamento para posicionar a pedra nas mãos (ajuste fino)
+    const offsetX = -pedW * 0.3;  // esquerda em relação ao centro do Sísifo
+    const offsetY = -pedH * 0.8;  // acima perto da cabeça
+
+    const px = p.x + offsetX;
+    const py = p.y + offsetY;
+
+    // ângulo fixo para inclinar pedra (~ -15 graus)
+    const angulo = -0.26; // radianos
+
+    ctx.save();
+    ctx.translate(px + pedW/2, py + pedH/2);
+    ctx.rotate(angulo);
+    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH);
+    ctx.restore();
+  }
+
+  // Pedra: se estado QUEDA, desenha com rotação progressiva (queda)
+  if(estado === ESTADOS.QUEDA) {
+    const q = cubicBezierPoint(progressoQueda, curvaQueda[0], curvaQueda[1], curvaQueda[2], curvaQueda[3]);
+    const pedW = Math.max(48, canvas.width * 0.06);
+    const pedH = pedW * (IMG_PEDRA.height ? (IMG_PEDRA.height/IMG_PEDRA.width) : 1.0);
+    const px = q.x - pedW/2;
+    const py = q.y - pedH/2;
+
+    ctx.save();
+    ctx.translate(px + pedW/2, py + pedH/2);
+    const rot = progresoRotacao(progressoQueda);
+    ctx.rotate(rot);
+    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH);
+    ctx.restore();
+  }
+
+  placarEl.textContent = `Montanhas: ${montanhas}`;
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ===========================
+   util: rotação da pedra (mais rápida na queda)
+   ===========================*/
+function progresoRotacao(t) {
+  return t * Math.PI * 3.6; // várias voltas
+}
+
+/* ===========================
+   Iniciar / reiniciar
+   ===========================*/
+function iniciarCiclo(){
+  if(estado !== ESTADOS.PARADO) return;
+  estado = ESTADOS.MOVENDO;
+  progressoSubida = 0;
+  velSubida = 0.001;
+  progressoQueda = 0;
+  velQueda = 0;
+  movimentoAtivo = true;
+}
+function reiniciarParaParado(){
+  montanhas++;
+  estado = ESTADOS.PARADO;
+  progressoSubida = 0;
+  velSubida = 0;
+  progressoQueda = 0;
+  velQueda = 0;
+  movimentoAtivo = false;
+}
+
+/* ===========================
+   Inicializações quando imagens carregam
+   ===========================*/
+function inicializaTudo(){
+  recalcBg();
+  curvaSubida = pctToPx(curvaSubidaPct);
+  curvaQueda = pctToPx(curvaQuedaPct);
+}
+IMG_BG.onload = inicializaTudo;
+IMG_SISIFO.onload = () => {/* ok */};
+IMG_PEDRA.onload = () => {/* ok */};
+if(IMG_BG.complete) inicializaTudo();
+
+</script>
+</body>
+</html>
