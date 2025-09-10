@@ -144,11 +144,21 @@ function reiniciarParaParado(){
 
 function desenharFundo(){
   if(!IMG_BG.width) return;
-  const scale = Math.min(canvas.width / IMG_BG.width, canvas.height / IMG_BG.height);
+
+  const scaleW = canvas.width / IMG_BG.width;
+  const scaleH = canvas.height / IMG_BG.height;
+  const scale = Math.max(scaleW, scaleH * 0.9); // ajusta ligeiramente para caber melhor
+
   const w = IMG_BG.width * scale;
   const h = IMG_BG.height * scale;
-  // centraliza a imagem na tela
-  ctx.drawImage(IMG_BG, (canvas.width - w)/2, (canvas.height - h)/2, w, h);
+
+  ctx.drawImage(
+    IMG_BG,
+    (canvas.width - w)/2,
+    (canvas.height - h)/2,
+    w,
+    h
+  );
 }
 
 
