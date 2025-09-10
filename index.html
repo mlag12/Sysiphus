@@ -1,247 +1,424 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sísifo na Montanha</title>
-  <style>
-    :root {
-      --btn-bg: linear-gradient(135deg, #ff004d, #ffb347);
-      --btn-border: #000;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sísifo na Montanha</title>
+<style>
+  :root {
+    --btn-bg: linear-gradient(135deg, #ff004d, #ffb347);
+    --btn-border: #000;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #000;
+    font-family: "Courier New", monospace;
+  }
+  #game { display: block; width: 100vw; height: 100vh; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #placar {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 5vh;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+    z-index: 10;
+    white-space: nowrap;
+  }
+  #botao-container {
+    position: fixed;
+    bottom: 3%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #botao-container button {
+    display: block;
+    margin: 5px 0;
+    padding: 2vh 4vw;
+    border-radius: 12px;
+    border: 3px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: #ff004d;
+    font-weight: 900;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-size: 4vw;
+  }
+  #botao-container button:active { transform: translateY(1px); }
 
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-      background: #000;
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-    }
+  /* ----- MENU (corrigido) ----- */
+  #menu-container {
+    position: fixed;
+    top: 2%;
+    right: 2%;
+    z-index: 20;
+    pointer-events: auto;
+    color: #fff;
 
-    #game {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
+    display: flex;
+    flex-direction: column;   /* empilha verticalmente */
+    align-items: flex-end;    /* alinha as caixas à direita do container */
+    gap: 6px;
+  }
 
-    #ui {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-    }
+  /* botão principal "Menu" (não estica) */
+  #botao-menu {
+    cursor: pointer;
+    font-size: 16px;
+    background: linear-gradient(135deg, #ff004d, #ffb347);
+    border: 2px solid #000;
+    padding: 6px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: auto;
+  }
 
-    #placar {
-      position: absolute;
-      top: 2%;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #fff;
-      font-weight: 800;
-      font-size: 5vh;
-      /* reduz um pouco para caber em uma linha */
-      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
-      z-index: 10;
-      white-space: nowrap;
-      /* impede quebra de linha */
-    }
+  /* container que aparece ao abrir o menu */
+  #menu-itens {
+    display: none;               /* controlado via .open no container */
+    flex-direction: column;
+    align-items: flex-end;       /* faz a borda direita de cada item alinhar */
+    gap: 6px;
+    margin-top: 4px;
+    pointer-events: auto;
+  }
 
+  /* quando o container tem a classe .open mostramos os itens em coluna */
+  #menu-container.open #menu-itens {
+    display: flex;
+  }
 
-    #botao-container {
-      position: fixed;
-      bottom: 3%;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-      pointer-events: auto;
-    }
+  /* estilo dos itens (botões e label) — não vão esticar */
+  #menu-itens button,
+  #menu-itens label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* conteúdo alinhado à direita dentro do próprio item */
+    gap: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    background: linear-gradient(135deg, #ff004d, #ffb347);
+    border: 2px solid #000;
+    padding: 6px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
 
-    #botao-empurrar {
-      padding: 2vh 4vw;
-      border-radius: 12px;
-      border: 3px solid var(--btn-border);
-      background: var(--btn-bg);
-      color: #ff004d;
-      font-weight: 900;
-      letter-spacing: 2px;
-      cursor: pointer;
-      font-family: 'Courier New', monospace;
-      font-size: 4vw;
-    }
+  /* label: mantém o checkbox e o texto com espaçamento; conteúdo fica à direita */
+  #menu-itens label {
+    user-select: none;
+  }
 
-    #botao-empurrar:active {
-      transform: translateY(1px);
-    }
-  </style>
+  #menu-itens label input {
+    /* pouca margem para não colar no texto */
+    margin-left: 0;
+  }
+
+  /* ranking box e demais estilos mantidos */
+  #ranking-absurdo {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(2deg);
+    padding: 3vh 5vw;
+    background: rgba(0, 0, 0, 0.9);
+    border: 4px dashed red;
+    color: white;
+    font-family: "Courier New", monospace;
+    font-size: 3vh;
+    text-align: center;
+    z-index: 1000;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  #ranking-absurdo h1 { font-family: "Impact", fantasy; font-size: 6vh; color: #ff004d; text-shadow: 2px 2px 6px rgba(255,0,77,0.5); margin-bottom: 2vh; border-bottom: 2px dashed yellow; padding-bottom: 1vh; }
+  #ranking-absurdo ul { list-style: none; padding: 0; margin: 0; }
+  #ranking-absurdo li { margin-bottom: 1.5vh; color: #00ffff; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,255,255,0.5); animation: pulse 2s infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.7; } }
+
+  #ranking-box {
+    display: none;
+    margin-top: 10px;
+    background: rgba(0,0,0,0.9);
+    border: 2px solid #fff;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 14px;
+  }
+  .caixa-nome {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-5deg);
+    padding: 3vh 5vw;
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    border: 4px dashed yellow;
+    color: white;
+    font-family: "Courier New", monospace;
+    font-size: 4vh;
+    text-align: center;
+    z-index: 999;
+  }
+</style>
 </head>
-
 <body>
-  <canvas id="game"></canvas>
-  <div id="ui">
-    <div id="placar">Montanhas: 0</div>
-    <div id="botao-container">
-      <button id="botao-empurrar">Empurrar</button>
-    </div>
+<canvas id="game"></canvas>
+<div id="ui">
+  <div id="placar">Montanhas: 0</div>
+  <div id="botao-container">
+    <button id="botao-empurrar">Empurrar</button>
+    <button id="botao-suicidar">Suicidar</button>
   </div>
 
-  <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d', { alpha: false });
+  <!-- menu corrigido -->
+  <div id="menu-container">
+    <button id="botao-menu">Menu</button>
+    <div id="menu-itens">
+      <button id="botao-ranking">Ranking</button>
+      <label><input type="checkbox" id="mostrar-score"> Mostrar Score</label>
 
-    const IMG_BG = new Image(); IMG_BG.src = 'images/montanha.jpg';
-    const IMG_SISIFO = new Image(); IMG_SISIFO.src = 'images/sisifo.png';
-    const IMG_PEDRA = new Image(); IMG_PEDRA.src = 'images/pedra.png';
+      <div id="ranking-absurdo">
+        <h1>TOP 10:</h1>
+        <ul id="ranking-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
 
-    const placarEl = document.getElementById('placar');
-    const botao = document.getElementById('botao-empurrar');
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+import { getDatabase, ref, push, set, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 
-    const ESTADOS = { PARADO: 0, SUBINDO: 1, PAUSA: 2, QUEDA: 3 };
-    let estado = ESTADOS.PARADO;
-    let montanhas = 0, movimentoAtivo = false;
+// Firebase Configuration (mantive o seu)
+const firebaseConfig = {
+  apiKey: "AIzaSyAk2SE580mZCNbLpAboxC7A4FlviilKtIE",
+  authDomain: "sysiphus-afea7.firebaseapp.com",
+  projectId: "sysiphus-afea7",
+  storageBucket: "sysiphus-afea7.firebasestorage.app",
+  messagingSenderId: "182996428651",
+  appId: "1:182996428651:web:82675bca0f31c978db8e2e",
+  measurementId: "G-G6N5MKSFV3"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    // Curva de subida do Sísifo ajustada: topo bem cortado
-    const curvaSubidaPct = [
-      { x: 0.15, y: 0.65 },  // início da subida (mantido)
-      { x: 0.25, y: 0.40 },
-      { x: 0.40, y: 0.40 },
-      { x: 0.60, y: 0.40 }   // topo bem cortado
-    ];
+// elementos UI
+const menuContainer = document.getElementById('menu-container');
+const botaoMenu = document.getElementById('botao-menu');
+const menuItens = document.getElementById('menu-itens');
+const botaoRanking = document.getElementById('botao-ranking');
+const rankingBox = document.getElementById('ranking-absurdo');
+const rankingList = document.getElementById('ranking-list');
+const checkbox = document.getElementById('mostrar-score');
 
-    // Curva de queda da pedra ajustada
-    const curvaQuedaPct = [
-      { x: 0.70, y: 0.40 },  // início da queda no novo topo
-      { x: 0.75, y: 0.55 },
-      { x: 0.90, y: 0.65 },
-      { x: 0.99, y: 0.75 }   // fim próximo da base
-    ];
-    let curvaSubida, curvaQueda;
+botaoMenu.addEventListener('click', ()=> {
+  menuContainer.classList.toggle('open');
+});
 
-    function pctToPx(curvaPct) {
-      return curvaPct.map(p => ({ x: p.x * canvas.width, y: p.y * canvas.height }));
+// manter o checkbox funcionando
+let mostrarScore = false;
+checkbox.addEventListener('change', ()=> { mostrarScore = checkbox.checked; });
+
+// ranking toggle
+botaoRanking.addEventListener('click', ()=> {
+  const isShown = rankingBox.style.display === 'block';
+  rankingBox.style.display = isShown ? 'none' : 'block';
+  if (!isShown) atualizarRanking();
+});
+
+// restante do seu código (movimento, firebase, loop etc.)
+// --- para reduzir tamanho aqui reutilizei suas variáveis originais ---
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const IMG_BG = new Image(); IMG_BG.src = 'images/montanha.jpg';
+const IMG_SISIFO = new Image(); IMG_SISIFO.src = 'images/sisifo.png';
+const IMG_PEDRA = new Image(); IMG_PEDRA.src = 'images/pedra.png';
+const placarEl = document.getElementById('placar');
+const botaoEmpurrar = document.getElementById('botao-empurrar');
+const botaoSuicidar = document.getElementById('botao-suicidar');
+let suicidou = false;
+
+const ESTADOS = { PARADO:0, SUBINDO:1, PAUSA:2, QUEDA:3, SUICIDIO:4 };
+let estado = ESTADOS.PARADO;
+let montanhas = 0, movimentoAtivo = false;
+
+const curvaSubidaPct = [{x:0.15,y:0.65},{x:0.25,y:0.40},{x:0.40,y:0.40},{x:0.60,y:0.40}];
+const curvaQuedaPct = [{x:0.70,y:0.40},{x:0.75,y:0.55},{x:0.90,y:0.65},{x:0.99,y:0.75}];
+let curvaSubida, curvaQueda;
+function pctToPx(curva) { return curva.map(p=>({x:p.x*canvas.width,y:p.y*canvas.height})); }
+function resize() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; curvaSubida=pctToPx(curvaSubidaPct); curvaQueda=pctToPx(curvaQuedaPct);}
+window.addEventListener('resize', resize); resize();
+
+function pressionar(){if(estado===ESTADOS.PARADO) iniciarCiclo(); else if(estado===ESTADOS.SUBINDO) movimentoAtivo=true;}
+function soltar(){movimentoAtivo=false;}
+botaoEmpurrar.addEventListener('mousedown', e=>{e.preventDefault(); pressionar();});
+botaoEmpurrar.addEventListener('touchstart', e=>{e.preventDefault(); pressionar();},{passive:false});
+botaoEmpurrar.addEventListener('mouseup', soltar);
+botaoEmpurrar.addEventListener('touchend', soltar,{passive:false});
+
+botaoSuicidar.addEventListener('click', () => {
+  if(estado !== ESTADOS.SUICIDIO){
+    estado = ESTADOS.SUICIDIO;
+    suicidou = true;
+    progressoQueda = 0;
+    velQueda = 0.008;
+  }
+});
+
+function cubicBezierPoint(t,p0,p1,p2,p3){
+  const lerp = (a,b,t)=>({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
+  const a=lerp(p0,p1,t), b=lerp(p1,p2,t), c=lerp(p2,p3,t);
+  const d=lerp(a,b,t), e=lerp(b,c,t);
+  return lerp(d,e,t);
+}
+
+let progressoSubida=0, velSubida=0, progressoQueda=0, velQueda=0;
+let maxVelSubida=0.01, aceleracaoSubida=0.003, desaceleraSubida=0.9;
+let aceleracaoQuedaInit=0.008, gravidadeQueda=0.0002, pausaFrames=0;
+function iniciarCiclo(){estado=ESTADOS.SUBINDO; progressoSubida=0; velSubida=0.005; progressoQueda=0; velQueda=0; movimentoAtivo=true;}
+function reiniciarParaParado(){montanhas++; estado=ESTADOS.PARADO; progressoSubida=progressoQueda=0; velSubida=velQueda=0; movimentoAtivo=false;}
+
+async function salvarScore(nome, score){
+  const scoresRef = ref(db,'scores');
+  await set(push(scoresRef), {nome: nome, score: score});
+  atualizarRanking();
+}
+
+function atualizarRanking(){
+  const scoresRef = query(ref(db,'scores'), orderByChild('score'), limitToLast(10));
+  onValue(scoresRef, snapshot=>{
+    rankingList.innerHTML='';
+    const scores=[];
+    snapshot.forEach(snap=>{const val = snap.val(); scores.push({nome:val.nome, score:val.score});});
+    scores.sort((a,b)=>b.score-a.score);
+    scores.forEach((s,i)=>{
+      const li = document.createElement('li');
+      li.textContent = `${i+1}. ${s.nome} - ${s.score} Montanhas`;
+      rankingList.appendChild(li);
+    });
+  });
+}
+
+async function fimDoJogoSuicidio() {
+  const scoreAtual = montanhas;
+  montanhas = 0;
+  placarEl.textContent = `Montanhas: ${montanhas}`;
+
+  const scoresRef = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
+  const snapshot = await new Promise(resolve => {
+    onValue(scoresRef, snap => resolve(snap), { onlyOnce: true });
+  });
+
+  let scores = [];
+  snapshot.forEach(snap => {
+    const val = snap.val();
+    scores.push({nome: val.nome, score: val.score});
+  });
+  scores.sort((a,b) => b.score - a.score);
+
+  let menorTop = (scores.length < 10) ? -1 : scores[scores.length-1].score;
+
+  if (scoreAtual > menorTop) {
+    const caixaNome = document.createElement('div');
+    caixaNome.className = 'caixa-nome';
+    caixaNome.innerHTML = `
+      <p>Você merece entrar no ranking!</p>
+      <input type="text" id="nome-jogador" placeholder="Seu nome..." style="font-size:3vh;padding:5px;margin:5px;">
+      <br>
+      <button id="salvar-absurdo" style="font-size:3vh;padding:5px 10px;margin-top:10px;
+      background: linear-gradient(135deg,#ff004d,#ffb347);
+      border:3px solid black; border-radius:12px; cursor:pointer; color:#ff004d;">Salvar</button>
+    `;
+    document.body.appendChild(caixaNome);
+
+    document.getElementById('salvar-absurdo').addEventListener('click', () => {
+      const nome = document.getElementById('nome-jogador').value || 'Estrangeiro';
+      salvarScore(nome, scoreAtual).then(() => {
+        document.body.removeChild(caixaNome);
+      });
+    });
+  } else {
+    estado = ESTADOS.PARADO;
+    progressoSubida=progressoQueda=0;
+    velSubida=velQueda=0;
+    movimentoAtivo=false;
+  }
+}
+
+function desenharFundo(){
+  if(!IMG_BG.width) return;
+  const scale = canvas.width/IMG_BG.width;
+  let w = IMG_BG.width*scale;
+  let h = IMG_BG.height*scale;
+  if(h<canvas.height){const extra=Math.min(canvas.height/h,1.1); w*=extra; h*=extra;}
+  ctx.drawImage(IMG_BG,(canvas.width-w)/2,(canvas.height-h)/2,w,h);
+}
+
+function loop(){
+  if(estado===ESTADOS.SUBINDO){
+    if(movimentoAtivo){velSubida+=aceleracaoSubida; if(velSubida>maxVelSubida) velSubida=maxVelSubida;}
+    else {velSubida*=desaceleraSubida; if(velSubida<0.0001) velSubida=0;}
+    progressoSubida+=velSubida;
+    if(progressoSubida>=1){progressoSubida=1; estado=ESTADOS.PAUSA; pausaFrames=15; progressoQueda=0; velQueda=aceleracaoQuedaInit;}
+  } else if(estado===ESTADOS.PAUSA){pausaFrames--; if(pausaFrames<=0) estado=ESTADOS.QUEDA;}
+  else if(estado===ESTADOS.QUEDA){velQueda+=gravidadeQueda; progressoQueda+=velQueda; if(progressoQueda>=1){reiniciarParaParado();}}
+  else if(estado===ESTADOS.SUICIDIO){velQueda+=gravidadeQueda; progressoQueda+=velQueda; if(progressoQueda>=1){estado=ESTADOS.PARADO; fimDoJogoSuicidio();}}
+
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  desenharFundo();
+
+  const sis = (estado===ESTADOS.SUICIDIO)? cubicBezierPoint(progressoQueda,...curvaQueda)
+              : cubicBezierPoint(progressoSubida,...curvaSubida);
+  const sisW = canvas.width*0.1;
+  const sisH=sisW*(IMG_SISIFO.height/IMG_SISIFO.width || 1);
+  const sx = sis.x - sisW/2, sy = sis.y - sisH + 6;
+
+  if(estado===ESTADOS.SUICIDIO){
+    const q = cubicBezierPoint(progressoQueda,...curvaQueda);
+    const pedW = canvas.width*0.08, pedH=pedW;
+    const px = q.x-pedW/2, py=q.y-pedH/2;
+    ctx.save();
+    ctx.translate(px+pedW/2, py+pedH/2);
+    ctx.rotate(progressoQueda*Math.PI*3.6);
+    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA,-pedW/2,-pedH/2,pedW,pedH);
+    ctx.restore();
+    if(IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO,sx,sy,sisW,sisH);
+  } else {
+    if(IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO,sx,sy,sisW,sisH);
+
+    if(estado===ESTADOS.SUBINDO || estado===ESTADOS.PAUSA){
+      const pedW = sisW*0.7, pedH=pedW;
+      const px = sx+sisW*0.4, py = sy-pedH*0.7;
+      if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA,px,py,pedW,pedH);
     }
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      curvaSubida = pctToPx(curvaSubidaPct);
-      curvaQueda = pctToPx(curvaQuedaPct);
+    if(estado===ESTADOS.QUEDA){
+      const q = cubicBezierPoint(progressoQueda,...curvaQueda);
+      const pedW = canvas.width*0.06, pedH=pedW;
+      const px = q.x-pedW/2, py=q.y-pedH/2;
+      ctx.save(); ctx.translate(px+pedW/2, py+pedH/2); ctx.rotate(progressoQueda*Math.PI*3.6);
+      if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA,-pedW/2,-pedH/2,pedW,pedH);
+      ctx.restore();
     }
-    window.addEventListener('resize', resize);
-    resize();
+  }
 
-    // Eventos do botão
-    botao.addEventListener('mousedown', e => { e.preventDefault(); pressionar(); });
-    botao.addEventListener('touchstart', e => { e.preventDefault(); pressionar(); }, { passive: false });
-    botao.addEventListener('mouseup', () => soltar());
-    botao.addEventListener('touchend', () => soltar(), { passive: false });
-    botao.addEventListener('mouseleave', () => { if (movimentoAtivo) soltar(); });
-    window.addEventListener('keydown', ev => { if (ev.code === 'Space') { ev.preventDefault(); pressionar(); } });
-    window.addEventListener('keyup', ev => { if (ev.code === 'Space') { ev.preventDefault(); soltar(); } });
+  placarEl.textContent = mostrarScore ? `Score: ${montanhas}` : `Montanhas: ${montanhas}`;
 
-    function pressionar() {
-      if (estado === ESTADOS.PARADO) iniciarCiclo();
-      else if (estado === ESTADOS.SUBINDO) movimentoAtivo = true;
-    }
-    function soltar() { movimentoAtivo = false; }
+  requestAnimationFrame(loop);
+}
 
-    function cubicBezierPoint(t, p0, p1, p2, p3) {
-      const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-      const a = lerp(p0, p1, t), b = lerp(p1, p2, t), c = lerp(p2, p3, t);
-      const d = lerp(a, b, t), e = lerp(b, c, t);
-      return lerp(d, e, t);
-    }
-
-    let progressoSubida = 0, velSubida = 0, progressoQueda = 0, velQueda = 0;
-    let maxVelSubida = 0.01, aceleracaoSubida = 0.003, desaceleraSubida = 0.9;
-    let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
-
-    function iniciarCiclo() {
-      estado = ESTADOS.SUBINDO;
-      progressoSubida = 0;
-      velSubida = 0.005;
-      progressoQueda = 0;
-      velQueda = 0;
-      movimentoAtivo = true;
-    }
-
-    function reiniciarParaParado() {
-      montanhas++;
-      estado = ESTADOS.PARADO;
-      progressoSubida = progressoQueda = 0;
-      velSubida = velQueda = 0;
-      movimentoAtivo = false;
-    }
-
-    function desenharFundo() {
-      if (!IMG_BG.width) return;
-
-      // escala baseada na largura da tela
-      const scale = canvas.width / IMG_BG.width;
-      let w = IMG_BG.width * scale;
-      let h = IMG_BG.height * scale;
-
-      // se a altura ficar menor que a tela, aumenta ligeiramente (máx 1.1x) para preencher melhor
-      if (h < canvas.height) {
-        const extraScale = Math.min(canvas.height / h, 1.1);
-        w *= extraScale;
-        h *= extraScale;
-      }
-
-      // centraliza
-      ctx.drawImage(IMG_BG, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-    }
-
-
-
-    function progresoRotacao(t) { return t * Math.PI * 3.6; }
-
-    function loop() {
-      // Atualiza física
-      if (estado === ESTADOS.SUBINDO) {
-        if (movimentoAtivo) { velSubida += aceleracaoSubida; if (velSubida > maxVelSubida) velSubida = maxVelSubida; }
-        else { velSubida *= desaceleraSubida; if (velSubida < 0.0001) velSubida = 0; }
-        progressoSubida += velSubida;
-        if (progressoSubida >= 1) { progressoSubida = 1; estado = ESTADOS.PAUSA; pausaFrames = 15; progressoQueda = 0; velQueda = aceleracaoQuedaInit; }
-      } else if (estado === ESTADOS.PAUSA) { pausaFrames--; if (pausaFrames <= 0) estado = ESTADOS.QUEDA; }
-      else if (estado === ESTADOS.QUEDA) {
-        velQueda += gravidadeQueda; progressoQueda += velQueda;
-        if (progressoQueda >= 1) { setTimeout(reiniciarParaParado, 200); estado = ESTADOS.PARADO; }
-      }
-
-      // Limpa tela e desenha fundo
-      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      desenharFundo();
-
-      // Sísifo
-      const p = cubicBezierPoint(progressoSubida, ...curvaSubida);
-      const sisW = canvas.width * 0.1;
-      const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width);
-      const sx = p.x - sisW / 2, sy = p.y - sisH + 6;
-      if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
-
-      // Pedra
-      if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
-        const pedW = sisW * 0.7, pedH = pedW;
-        const px = sx + sisW * 0.4, py = sy - pedH * 0.7;
-        if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, px, py, pedW, pedH);
-      }
-      if (estado === ESTADOS.QUEDA) {
-        const q = cubicBezierPoint(progressoQueda, ...curvaQueda);
-        const pedW = canvas.width * 0.06, pedH = pedW;
-        const px = q.x - pedW / 2, py = q.y - pedH / 2;
-        ctx.save();
-        ctx.translate(px + pedW / 2, py + pedH / 2);
-        ctx.rotate(progresoRotacao(progressoQueda));
-        if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH);
-        ctx.restore();
-      }
-
-      placarEl.textContent = `Montanhas: ${montanhas}`;
-      requestAnimationFrame(loop);
-    }
-
-    requestAnimationFrame(loop);
-  </script>
+requestAnimationFrame(loop);
+atualizarRanking();
+</script>
 </body>
-
 </html>
