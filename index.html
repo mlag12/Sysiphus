@@ -67,7 +67,7 @@
       border-radius: 12px;
       border: 3px solid var(--btn-border);
       background: var(--btn-bg);
-      color: #ff004d;
+      color: #ffffff;
       font-weight: 900;
       letter-spacing: 2px;
       cursor: pointer;
@@ -370,50 +370,33 @@
       });
     }
 
+    // ... dentro da função fimDoJogoSuicidio
     async function fimDoJogoSuicidio() {
       const scoreAtual = montanhas;
       montanhas = 0;
       placarEl.textContent = `Montanhas: ${montanhas}`;
 
-      const scoresRef = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
-      const snapshot = await new Promise(resolve => {
-        onValue(scoresRef, snap => resolve(snap), { onlyOnce: true });
-      });
+      const caixaNome = document.createElement('div');
+      caixaNome.className = 'caixa-nome';
+      caixaNome.innerHTML = `<p>Você atingiu ${scoreAtual} montanhas!</p>
+    <p>Insira seu nome para o ranking:</p>
+    <input type="text" id="nome-jogador" placeholder="Seu nome..." style="font-size:3vh;padding:5px;margin:5px;"><br>
+    <button id="salvar-absurdo" style="font-size:3vh;padding:5px 10px;margin-top:10px;
+    background: linear-gradient(135deg,#ff004d,#ffb347); border:3px solid black; border-radius:12px; cursor:pointer; color:black;">Salvar</button>`;
+      document.body.appendChild(caixaNome);
 
-      let scores = [];
-      snapshot.forEach(snap => {
-        const val = snap.val();
-        scores.push({ nome: val.nome, score: val.score });
-      });
-      scores.sort((a, b) => b.score - a.score);
-
-      let menorTop = (scores.length < 10) ? -1 : scores[scores.length - 1].score;
-
-      if (scoreAtual > menorTop) {
-        const caixaNome = document.createElement('div');
-        caixaNome.className = 'caixa-nome';
-        caixaNome.innerHTML = `
-      <p>Você merece entrar no ranking!</p>
-      <input type="text" id="nome-jogador" placeholder="Seu nome..." style="font-size:3vh;padding:5px;margin:5px;">
-      <br>
-      <button id="salvar-absurdo" style="font-size:3vh;padding:5px 10px;margin-top:10px;
-      background: linear-gradient(135deg,#ff004d,#ffb347);
-      border:3px solid black; border-radius:12px; cursor:pointer; color:#ff004d;">Salvar</button>
-    `;
-        document.body.appendChild(caixaNome);
-
-        document.getElementById('salvar-absurdo').addEventListener('click', () => {
-          const nome = document.getElementById('nome-jogador').value || 'Estrangeiro';
-          salvarScore(nome, scoreAtual).then(() => {
-            document.body.removeChild(caixaNome);
-          });
+      document.getElementById('salvar-absurdo').addEventListener('click', () => {
+        const nome = document.getElementById('nome-jogador').value || 'Anônimo';
+        // Chame salvarScore com o nome e o score atual
+        salvarScore(nome, scoreAtual).then(() => {
+          document.body.removeChild(caixaNome);
+          // Reinicie o estado do jogo
+          estado = ESTADOS.PARADO;
+          progressoSubida = progressoQueda = 0;
+          velSubida = velQueda = 0;
+          movimentoAtivo = false;
         });
-      } else {
-        estado = ESTADOS.PARADO;
-        progressoSubida = progressoQueda = 0;
-        velSubida = velQueda = 0;
-        movimentoAtivo = false;
-      }
+      });
     }
 
     function desenharFundo() {
@@ -508,6 +491,6 @@
 
     atualizarRanking();
   </script>
-</body>
+</body>aa
 
 </html>
