@@ -99,22 +99,21 @@
     let estado = ESTADOS.PARADO;
     let montanhas = 0, movimentoAtivo = false;
 
-    // Curva de subida do Sísifo ajustada (altura reduzida pela metade)
+    // Curva de subida do Sísifo ajustada: topo bem cortado
     const curvaSubidaPct = [
-      { x: 0.15, y: 0.65 * 0.5 },  // início da subida
-      { x: 0.25, y: 0.50 * 0.5 },
-      { x: 0.40, y: 0.30 * 0.5 },
-      { x: 0.50, y: 0.02 * 0.5 }   // topo da subida reduzido
+      { x: 0.15, y: 0.65 },  // início da subida (mantido)
+      { x: 0.25, y: 0.50 },
+      { x: 0.40, y: 0.30 },
+      { x: 0.50, y: 0.001 }   // topo bem cortado
     ];
 
-    // Curva de queda da pedra ajustada (altura reduzida pela metade)
+    // Curva de queda da pedra ajustada
     const curvaQuedaPct = [
-      { x: 0.50, y: 0.02 * 0.5 },  // início da queda
-      { x: 0.55, y: 0.20 * 0.5 },
-      { x: 0.70, y: 0.55 * 0.5 },
-      { x: 0.90, y: 0.85 * 0.5 }   // fim da queda
+      { x: 0.50, y: 0.001 },  // início da queda no novo topo
+      { x: 0.55, y: 0.20 },
+      { x: 0.70, y: 0.55 },
+      { x: 0.90, y: 0.85 }   // fim próximo da base
     ];
-
     let curvaSubida, curvaQueda;
 
     function pctToPx(curvaPct) {
