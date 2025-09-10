@@ -2,44 +2,51 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sísifo na Montanha</title>
 <style>
   :root {
     --btn-bg: linear-gradient(135deg,#ff004d,#ffb347);
     --btn-border: #000;
   }
-  html,body {
-    height:100%;
-    margin:0;
-    background:#000;
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #000;
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
   }
-  #game { display:block; width:100vw; height:100vh; }
-  #ui { position:fixed; inset:0; pointer-events:none; }
+  #game { display: block; width: 100vw; height: 100vh; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
   #placar {
-    position:absolute;
-    top:12px; left:50%;
-    transform:translateX(-50%);
-    color:#fff; font-weight:800;
-    font-size:1.8rem; text-shadow:2px 2px 6px rgba(0,0,0,0.8);
-    z-index:10;
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 6vh;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+    z-index: 10;
   }
   #botao-container {
-    position:fixed;
-    bottom:26px; left:50%;
-    transform:translateX(-50%);
-    z-index:20; pointer-events:auto;
+    position: fixed;
+    bottom: 3%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: auto;
   }
   #botao-empurrar {
-    padding:12px 20px;
-    border-radius:12px;
-    border:3px solid var(--btn-border);
-    background:var(--btn-bg);
-    color:#ff004d; font-weight:900;
-    letter-spacing:2px; cursor:pointer;
-    font-family:'Courier New', monospace;
-    font-size:1.05rem;
+    padding: 2vh 4vw;
+    border-radius: 12px;
+    border: 3px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: #ff004d;
+    font-weight: 900;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 4vw;
   }
   #botao-empurrar:active { transform: translateY(1px); }
 </style>
@@ -55,79 +62,98 @@
 
 <script>
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d',{alpha:false});
-function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
-window.addEventListener('resize',resize); resize();
+const ctx = canvas.getContext('2d', {alpha:false});
 
-const IMG_BG=new Image(); IMG_BG.src='images/montanha.jpg';
-const IMG_SISIFO=new Image(); IMG_SISIFO.src='images/sisifo.png';
-const IMG_PEDRA=new Image(); IMG_PEDRA.src='images/pedra.png';
+const IMG_BG = new Image(); IMG_BG.src = 'images/montanha.jpg';
+const IMG_SISIFO = new Image(); IMG_SISIFO.src = 'images/sisifo.png';
+const IMG_PEDRA = new Image(); IMG_PEDRA.src = 'images/pedra.png';
 
-const placarEl=document.getElementById('placar');
-const botao=document.getElementById('botao-empurrar');
+const placarEl = document.getElementById('placar');
+const botao = document.getElementById('botao-empurrar');
 
-const ESTADOS={PARADO:0,SUBINDO:1,PAUSA:2,QUEDA:3};
-let estado=ESTADOS.PARADO;
-let montanhas=0, movimentoAtivo=false;
+const ESTADOS = { PARADO:0, SUBINDO:1, PAUSA:2, QUEDA:3 };
+let estado = ESTADOS.PARADO;
+let montanhas = 0, movimentoAtivo = false;
 
-botao.addEventListener('mousedown',e=>{e.preventDefault();pressionar();});
-botao.addEventListener('touchstart',e=>{e.preventDefault();pressionar();},{passive:false});
-botao.addEventListener('mouseup',()=>soltar());
-botao.addEventListener('touchend',()=>soltar(),{passive:false});
-botao.addEventListener('mouseleave',()=>{if(movimentoAtivo)soltar();});
-window.addEventListener('keydown',ev=>{if(ev.code==='Space'){ev.preventDefault();pressionar();}});
-window.addEventListener('keyup',ev=>{if(ev.code==='Space'){ev.preventDefault();soltar();}});
+// Curvas em porcentagem da tela
+const curvaSubidaPct = [
+  {x:0.18, y:0.88}, {x:0.20, y:0.75},
+  {x:0.35, y:0.55}, {x:0.50, y:0.20}
+];
+const curvaQuedaPct = [
+  {x:0.50, y:0.20}, {x:0.55, y:0.35},
+  {x:0.70, y:0.65}, {x:0.95, y:0.92}
+];
+let curvaSubida, curvaQueda;
+
+function pctToPx(curvaPct) {
+  return curvaPct.map(p => ({x: p.x * canvas.width, y: p.y * canvas.height}));
+}
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  curvaSubida = pctToPx(curvaSubidaPct);
+  curvaQueda = pctToPx(curvaQuedaPct);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Eventos do botão
+botao.addEventListener('mousedown', e=>{ e.preventDefault(); pressionar(); });
+botao.addEventListener('touchstart', e=>{ e.preventDefault(); pressionar(); }, {passive:false});
+botao.addEventListener('mouseup', ()=>soltar());
+botao.addEventListener('touchend', ()=>soltar(), {passive:false});
+botao.addEventListener('mouseleave', ()=>{ if(movimentoAtivo) soltar(); });
+window.addEventListener('keydown', ev=>{ if(ev.code==='Space'){ ev.preventDefault(); pressionar(); } });
+window.addEventListener('keyup', ev=>{ if(ev.code==='Space'){ ev.preventDefault(); soltar(); } });
 
 function pressionar(){
   if(estado===ESTADOS.PARADO) iniciarCiclo();
-  else if(estado===ESTADOS.SUBINDO) movimentoAtivo=true;
-  // removi o reiniciarParaParado() da queda
+  else if(estado===ESTADOS.SUBINDO) movimentoAtivo = true;
 }
-function soltar(){ movimentoAtivo=false; }
+function soltar(){ movimentoAtivo = false; }
 
-// Sísifo subindo (curva ascendente com aceleração)
-const curvaSubidaPct = [
-  {x:0.18, y:0.88}, // início da subida (perto do chão)
-  {x:0.20, y:0.75},
-  {x:0.35, y:0.55},
-  {x:0.50, y:0.20}  // topo
-];
-
-// Pedra caindo (curva descendente com aceleração)
-const curvaQuedaPct = [
-  {x:0.50, y:0.20}, // inicio no topo
-  {x:0.55, y:0.35},
-  {x:0.70, y:0.65},
-  {x:0.95, y:0.92} // fim no chão
-];
-
-function pctToPx(curvaPct){ return curvaPct.map(p=>({x:p.x*canvas.width,y:p.y*canvas.height})); }
-let curvaSubida=pctToPx(curvaSubidaPct), curvaQueda=pctToPx(curvaQuedaPct);
 function cubicBezierPoint(t,p0,p1,p2,p3){
-  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
-  const a=lerp(p0,p1,t), b=lerp(p1,p2,t), c=lerp(p2,p3,t);
-  const d=lerp(a,b,t), e=lerp(b,c,t);
+  const lerp = (a,b,t)=>({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
+  const a = lerp(p0,p1,t), b = lerp(p1,p2,t), c = lerp(p2,p3,t);
+  const d = lerp(a,b,t), e = lerp(b,c,t);
   return lerp(d,e,t);
 }
 
 let progressoSubida=0, velSubida=0, progressoQueda=0, velQueda=0;
 let maxVelSubida=0.01, aceleracaoSubida=0.003, desaceleraSubida=0.9;
-let aceleracaoQuedaInit=0.008, gravidadeQueda=0.0002;
-let pausaFrames=0;
+let aceleracaoQuedaInit=0.008, gravidadeQueda=0.0002, pausaFrames=0;
 
-function iniciarCiclo(){ estado=ESTADOS.SUBINDO; progressoSubida=0; velSubida=0.005; progressoQueda=0; velQueda=0; movimentoAtivo=true; }
-function reiniciarParaParado(){ montanhas++; estado=ESTADOS.PARADO; progressoSubida=0; velSubida=0; progressoQueda=0; velQueda=0; movimentoAtivo=false; }
-
-function desenharFundo(){
-  if(!IMG_BG.width)return;
-  const cw=canvas.width,ch=canvas.height;
-  const scale=Math.max(cw/IMG_BG.width,ch/IMG_BG.height);
-  ctx.drawImage(IMG_BG,(cw-IMG_BG.width*scale)/2,(ch-IMG_BG.height*scale)/2,IMG_BG.width*scale,IMG_BG.height*scale);
+function iniciarCiclo(){ 
+  estado = ESTADOS.SUBINDO; 
+  progressoSubida = 0; 
+  velSubida = 0.005; 
+  progressoQueda = 0; 
+  velQueda = 0; 
+  movimentoAtivo = true; 
 }
 
-function progresoRotacao(t){ return t*Math.PI*3.6; }
+function reiniciarParaParado(){ 
+  montanhas++; 
+  estado = ESTADOS.PARADO; 
+  progressoSubida = progressoQueda = 0; 
+  velSubida = velQueda = 0; 
+  movimentoAtivo = false; 
+}
+
+function desenharFundo(){
+  if(!IMG_BG.width) return;
+  const scale = Math.max(canvas.width/IMG_BG.width, canvas.height/IMG_BG.height);
+  const w = IMG_BG.width*scale;
+  const h = IMG_BG.height*scale;
+  ctx.drawImage(IMG_BG, (canvas.width-w)/2, (canvas.height-h)/2, w, h);
+}
+
+function progresoRotacao(t){ return t * Math.PI * 3.6; }
 
 function loop(){
+  // Atualiza física
   if(estado===ESTADOS.SUBINDO){
     if(movimentoAtivo){ velSubida+=aceleracaoSubida; if(velSubida>maxVelSubida) velSubida=maxVelSubida; }
     else { velSubida*=desaceleraSubida; if(velSubida<0.0001) velSubida=0; }
@@ -139,36 +165,38 @@ function loop(){
     if(progressoQueda>=1){ setTimeout(reiniciarParaParado,200); estado=ESTADOS.PARADO; }
   }
 
+  // Limpa tela e desenha fundo
   ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
   desenharFundo();
 
-  // Sísifo sempre visível
-  const p=cubicBezierPoint(progressoSubida, ...curvaSubida);
-  const sisW=Math.max(64,canvas.width*0.08);
-  const sisH=sisW*(IMG_SISIFO.height/IMG_SISIFO.width);
-  const sx=p.x-sisW/2, sy=p.y-sisH+6;
-  if(IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO,sx,sy,sisW,sisH);
+  // Sísifo
+  const p = cubicBezierPoint(progressoSubida, ...curvaSubida);
+  const sisW = canvas.width * 0.1;
+  const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width);
+  const sx = p.x - sisW/2, sy = p.y - sisH + 6;
+  if(IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
-  // Pedra junto (subindo) ou caindo
+  // Pedra
   if(estado===ESTADOS.SUBINDO || estado===ESTADOS.PAUSA){
-    const pedW=sisW*0.7, pedH=pedW;
-    const px=sx+sisW*0.4; // desloca para frente
-    const py=sy-pedH*0.7; // ajusta para frente da cabeça
-    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA,px,py,pedW,pedH);
+    const pedW = sisW*0.7, pedH = pedW;
+    const px = sx + sisW*0.4, py = sy - pedH*0.7;
+    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, px, py, pedW, pedH);
   }
   if(estado===ESTADOS.QUEDA){
-    const q=cubicBezierPoint(progressoQueda, ...curvaQueda);
-    const pedW=Math.max(48,canvas.width*0.06), pedH=pedW;
-    const px=q.x-pedW/2, py=q.y-pedH/2;
-    ctx.save(); ctx.translate(px+pedW/2,py+pedH/2);
+    const q = cubicBezierPoint(progressoQueda, ...curvaQueda);
+    const pedW = canvas.width*0.06, pedH = pedW;
+    const px = q.x - pedW/2, py = q.y - pedH/2;
+    ctx.save();
+    ctx.translate(px+pedW/2, py+pedH/2);
     ctx.rotate(progresoRotacao(progressoQueda));
-    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA,-pedW/2,-pedH/2,pedW,pedH);
+    if(IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH);
     ctx.restore();
   }
 
-  placarEl.textContent=`Montanhas: ${montanhas}`;
+  placarEl.textContent = `Montanhas: ${montanhas}`;
   requestAnimationFrame(loop);
 }
+
 requestAnimationFrame(loop);
 </script>
 </body>
