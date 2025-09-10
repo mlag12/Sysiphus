@@ -452,7 +452,7 @@
         // Sísifo com pequeno desvio horizontal
         const sisW = canvas.width * 0.1;
         const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-        const sisDesvio = Math.sin(progressoQueda * Math.PI * 4) * 40; // desvio lateral
+        const sisDesvio = Math.sin(progressoQueda * Math.PI * 2) * 40; // desvio lateral
         const sx = q.x - sisW / 2 + sisDesvio;
         const sy = q.y - sisH / 2;
 
@@ -460,7 +460,7 @@
 
         // Pedra sobre Sísifo com rotação e desvio aleatório
         const pedW = canvas.width * 0.08, pedH = pedW;
-        const pedDesvio = Math.cos(progressoQueda * Math.PI * 5) * 35;
+        const pedDesvio = Math.cos(progressoQueda * Math.PI * 3) * 35;
         const px = q.x - pedW / 2 + pedDesvio;
         const py = q.y - pedH / 2;
         ctx.save();
