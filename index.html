@@ -144,11 +144,13 @@ function reiniciarParaParado(){
 
 function desenharFundo(){
   if(!IMG_BG.width) return;
-  const scale = Math.max(canvas.width/IMG_BG.width, canvas.height/IMG_BG.height);
-  const w = IMG_BG.width*scale;
-  const h = IMG_BG.height*scale;
-  ctx.drawImage(IMG_BG, (canvas.width-w)/2, (canvas.height-h)/2, w, h);
+  const scale = Math.min(canvas.width / IMG_BG.width, canvas.height / IMG_BG.height);
+  const w = IMG_BG.width * scale;
+  const h = IMG_BG.height * scale;
+  // centraliza a imagem na tela
+  ctx.drawImage(IMG_BG, (canvas.width - w)/2, (canvas.height - h)/2, w, h);
 }
+
 
 function progresoRotacao(t){ return t * Math.PI * 3.6; }
 
