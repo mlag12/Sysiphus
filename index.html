@@ -492,7 +492,12 @@
       }
 
       // Atualiza placar
-      placarEl.textContent = mostrarScore ? `Score: ${montanhas}` : `Montanhas: ${montanhas}`;
+      if (mostrarScore) {
+        placarEl.textContent = ''; // apaga o texto quando checkbox ativada
+      } else {
+        placarEl.textContent = `Montanhas: ${montanhas}`; // mostra normalmente
+      }
+
 
       // Próximo frame
       requestAnimationFrame(loop);
