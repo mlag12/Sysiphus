@@ -4,244 +4,77 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sísifo na Montanha</title>
+  <title>Sísifo na Montanha — Versão Completa</title>
   <style>
     :root {
       --btn-bg: linear-gradient(135deg, #ff004d, #ffb347);
       --btn-border: #000;
+      --accent: #ff004d;
+      --neon: #00ffff;
     }
 
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-      background: #000;
-      font-family: "Courier New", monospace;
-    }
+    /* reset mínimo */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: #000; color: #fff; font-family: "Courier New", monospace; }
 
-    #game {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
+    /* canvas full screen */
+    #game { display:block; width:100vw; height:100vh; background:#000; }
 
-    #ui {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-    }
+    /* UI overlay */
+    #ui { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
 
     #placar {
-      position: absolute;
-      top: 2%;
-      left: 2%;
-      /* alinhamento à esquerda */
-      transform: none;
-      /* remove centralização */
-      color: #fff;
-      font-weight: 800;
-      font-size: 3vh;
-      /* diminui a fonte */
-      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
-      z-index: 10;
-      white-space: nowrap;
+      position: absolute; top: 2%; left: 2%; color: #fff; font-weight: 800; font-size: 3vh; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); z-index: 110; white-space: nowrap;
     }
 
-
     #botao-container {
-      position: fixed;
-      bottom: 3%;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      position: fixed; bottom: 3%; left: 50%; transform: translateX(-50%); z-index: 120; pointer-events: auto; display:flex; flex-direction:column; align-items:center; gap: 8px;
     }
 
     #botao-container button {
-      display: block;
-      margin: 5px 0;
-      padding: 2vh 4vw;
-      border-radius: 12px;
-      border: 3px solid var(--btn-border);
-      background: var(--btn-bg);
-      color: #ffffff;
-      font-weight: 900;
-      letter-spacing: 2px;
-      cursor: pointer;
-      font-size: 4vw;
+      display:block; margin:0; padding: 2vh 4vw; border-radius: 12px; border: 3px solid var(--btn-border); background: var(--btn-bg); color:#fff; font-weight:900; letter-spacing:2px; cursor:pointer; font-size:4vw;
+      min-width: 160px; text-align:center;
     }
 
-    #botao-container button:active {
-      transform: translateY(1px);
-    }
+    #menu-container { position: fixed; top: 2%; right: 2%; z-index:130; pointer-events: auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+    #botao-menu { cursor:pointer; font-size: 16px; background: var(--btn-bg); border:2px solid #000; padding:6px 10px; border-radius:8px; }
 
-    /* ----- MENU (corrigido) ----- */
-    #menu-container {
-      position: fixed;
-      top: 2%;
-      right: 2%;
-      z-index: 20;
-      pointer-events: auto;
-      color: #fff;
+    #menu-itens { display:none; flex-direction:column; align-items:flex-end; gap:6px; margin-top:4px; }
+    #menu-container.open #menu-itens { display:flex; }
 
-      display: flex;
-      flex-direction: column;
-      /* empilha verticalmente */
-      align-items: flex-end;
-      /* alinha as caixas à direita do container */
-      gap: 6px;
-    }
+    #menu-itens button, #menu-itens label { display:flex; align-items:center; justify-content:flex-end; gap:8px; cursor:pointer; font-size:15px; background: var(--btn-bg); border:2px solid #000; padding:6px 10px; border-radius:8px; white-space:nowrap; }
+    #menu-itens label input { margin-left:0; transform: scale(1.1); }
 
-    /* botão principal "Menu" (não estica) */
-    #botao-menu {
-      cursor: pointer;
-      font-size: 16px;
-      background: linear-gradient(135deg, #ff004d, #ffb347);
-      border: 2px solid #000;
-      padding: 6px 10px;
-      border-radius: 8px;
-      white-space: nowrap;
-      pointer-events: auto;
-    }
-
-    /* container que aparece ao abrir o menu */
-    #menu-itens {
-      display: none;
-      /* controlado via .open no container */
-      flex-direction: column;
-      align-items: flex-end;
-      /* faz a borda direita de cada item alinhar */
-      gap: 6px;
-      margin-top: 4px;
-      pointer-events: auto;
-    }
-
-    /* quando o container tem a classe .open mostramos os itens em coluna */
-    #menu-container.open #menu-itens {
-      display: flex;
-    }
-
-    /* estilo dos itens (botões e label) — não vão esticar */
-    #menu-itens button,
-    #menu-itens label {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      /* conteúdo alinhado à direita dentro do próprio item */
-      gap: 8px;
-      cursor: pointer;
-      font-size: 15px;
-      background: linear-gradient(135deg, #ff004d, #ffb347);
-      border: 2px solid #000;
-      padding: 6px 10px;
-      border-radius: 8px;
-      white-space: nowrap;
-    }
-
-    /* label: mantém o checkbox e o texto com espaçamento; conteúdo fica à direita */
-    #menu-itens label {
-      user-select: none;
-    }
-
-    #menu-itens label input {
-      /* pouca margem para não colar no texto */
-      margin-left: 0;
-    }
-
-    /* ranking box e demais estilos mantidos */
+    /* ranking modal */
     #ranking-absurdo {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(2deg);
-      padding: 3vh 5vw;
-      background: rgba(0, 0, 0, 0.9);
-      border: 4px dashed red;
-      color: white;
-      font-family: "Courier New", monospace;
-      font-size: 3vh;
-      text-align: center;
-      z-index: 1000;
-      max-height: 70vh;
-      overflow-y: auto;
+      display:none; position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(2deg); padding:3vh 5vw; background: rgba(0,0,0,0.95); border: 4px dashed red; color:white; font-family:"Courier New", monospace; font-size:3vh; text-align:center; z-index:1000; max-height:70vh; overflow-y:auto;
     }
 
-    #ranking-absurdo h1 {
-      font-family: "Impact", fantasy;
-      font-size: 6vh;
-      color: #ff004d;
-      text-shadow: 2px 2px 6px rgba(255, 0, 77, 0.5);
-      margin-bottom: 2vh;
-      border-bottom: 2px dashed yellow;
-      padding-bottom: 1vh;
-    }
+    #ranking-absurdo h1 { font-family: Impact, fantasy; font-size:6vh; color:var(--accent); text-shadow: 2px 2px 6px rgba(255,0,77,0.5); margin-bottom:2vh; border-bottom:2px dashed yellow; padding-bottom:1vh; }
+    #ranking-list { list-style:none; padding:0; margin:0; }
+    #ranking-list li { margin-bottom:1.2vh; color:var(--neon); font-weight:bold; text-shadow:1px 1px 3px rgba(0,255,255,0.4); }
 
-    #ranking-absurdo ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
+    /* name input box */
+    .caixa-nome { position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(-5deg); padding:3vh 5vw; background: linear-gradient(45deg, #ff00ff, #00ffff); border:4px dashed yellow; color:white; font-family:"Courier New", monospace; font-size:4vh; text-align:center; z-index:999; }
+    .caixa-nome input { font-size: 2.5vh; padding: 8px; width: 80%; border-radius:8px; border:2px solid #000; }
+    .caixa-nome button { margin-top: 12px; font-size:2.8vh; padding:6px 12px; border-radius:10px; cursor:pointer; }
 
-    #ranking-absurdo li {
-      margin-bottom: 1.5vh;
-      color: #00ffff;
-      font-weight: bold;
-      text-shadow: 1px 1px 3px rgba(0, 255, 255, 0.5);
-      animation: pulse 2s infinite alternate;
-    }
-
-    @keyframes pulse {
-      from {
-        opacity: 1;
-      }
-
-      to {
-        opacity: 0.7;
-      }
-    }
-
-    #ranking-box {
-      display: none;
-      margin-top: 10px;
-      background: rgba(0, 0, 0, 0.9);
-      border: 2px solid #fff;
-      padding: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      font-size: 14px;
-    }
-
-    .caixa-nome {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-5deg);
-      padding: 3vh 5vw;
-      background: linear-gradient(45deg, #ff00ff, #00ffff);
-      border: 4px dashed yellow;
-      color: white;
-      font-family: "Courier New", monospace;
-      font-size: 4vh;
-      text-align: center;
-      z-index: 999;
-    }
+    /* small responsive tweaks */
+    @media (min-width: 800px) { #botao-container button { font-size: 20px; } }
   </style>
 </head>
 
 <body>
   <canvas id="game"></canvas>
+
   <div id="ui">
     <div id="placar">Montanhas: 0</div>
+
     <div id="botao-container">
       <button id="botao-empurrar">Empurrar</button>
       <button id="botao-suicidar">Suicidar</button>
     </div>
 
-    <!-- menu corrigido -->
     <div id="menu-container">
       <button id="botao-menu">Menu</button>
       <div id="menu-itens">
@@ -258,9 +91,9 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 
-    // Firebase Configuration (mantive o seu)
+    // === Firebase configuration - mantenha a sua informação aqui ===
     const firebaseConfig = {
       apiKey: "AIzaSyAk2SE580mZCNbLpAboxC7A4FlviilKtIE",
       authDomain: "sysiphus-afea7.firebaseapp.com",
@@ -270,72 +103,72 @@
       appId: "1:182996428651:web:82675bca0f31c978db8e2e",
       measurementId: "G-G6N5MKSFV3"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // elementos UI
-    const menuContainer = document.getElementById('menu-container');
+    // === Elementos DOM ===
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const placarEl = document.getElementById('placar');
+
+    const botaoEmpurrar = document.getElementById('botao-empurrar');
+    const botaoSuicidar = document.getElementById('botao-suicidar');
     const botaoMenu = document.getElementById('botao-menu');
-    const menuItens = document.getElementById('menu-itens');
+    const menuContainer = document.getElementById('menu-container');
     const botaoRanking = document.getElementById('botao-ranking');
     const rankingBox = document.getElementById('ranking-absurdo');
     const rankingList = document.getElementById('ranking-list');
     const checkbox = document.getElementById('mostrar-score');
 
-    botaoMenu.addEventListener('click', () => {
-      menuContainer.classList.toggle('open');
-    });
+    // === Imagens (coloque na pasta images) ===
+    const IMG_BG = new Image(); IMG_BG.src = 'images/montanha.jpg';
+    const IMG_SISIFO = new Image(); IMG_SISIFO.src = 'images/sisifo.png';
+    const IMG_PEDRA = new Image(); IMG_PEDRA.src = 'images/pedra.png';
 
-    // manter o checkbox funcionando
+    // === Estado do jogo ===
+    const ESTADOS = { PARADO: 0, SUBINDO: 1, PAUSA: 2, QUEDA: 3, SUICIDIO: 4 };
+    let estado = ESTADOS.PARADO;
+    let montanhas = 0;
+    let movimentoAtivo = false;
     let mostrarScore = false;
-    checkbox.addEventListener('change', () => { mostrarScore = checkbox.checked; });
 
-    // ranking toggle
+    checkbox.addEventListener('change', () => { mostrarScore = checkbox.checked; });
+    botaoMenu.addEventListener('click', () => menuContainer.classList.toggle('open'));
+
     botaoRanking.addEventListener('click', () => {
       const isShown = rankingBox.style.display === 'block';
       rankingBox.style.display = isShown ? 'none' : 'block';
       if (!isShown) atualizarRanking();
     });
 
-    // restante do seu código (movimento, firebase, loop etc.)
-    // --- para reduzir tamanho aqui reutilizei suas variáveis originais ---
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const IMG_BG = new Image(); IMG_BG.src = 'images/montanha.jpg';
-    const IMG_SISIFO = new Image(); IMG_SISIFO.src = 'images/sisifo.png';
-    const IMG_PEDRA = new Image(); IMG_PEDRA.src = 'images/pedra.png';
-    const placarEl = document.getElementById('placar');
-    const botaoEmpurrar = document.getElementById('botao-empurrar');
-    const botaoSuicidar = document.getElementById('botao-suicidar');
-    let suicidou = false;
-
-    const ESTADOS = { PARADO: 0, SUBINDO: 1, PAUSA: 2, QUEDA: 3, SUICIDIO: 4 };
-    let estado = ESTADOS.PARADO;
-    let montanhas = 0, movimentoAtivo = false;
-
+    // --- resize canvas & curves ---
     const curvaSubidaPct = [{ x: 0.15, y: 0.65 }, { x: 0.25, y: 0.40 }, { x: 0.40, y: 0.40 }, { x: 0.60, y: 0.40 }];
     const curvaQuedaPct = [{ x: 0.70, y: 0.40 }, { x: 0.75, y: 0.55 }, { x: 0.90, y: 0.65 }, { x: 0.99, y: 0.75 }];
     let curvaSubida, curvaQueda;
+
     function pctToPx(curva) { return curva.map(p => ({ x: p.x * canvas.width, y: p.y * canvas.height })); }
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; curvaSubida = pctToPx(curvaSubidaPct); curvaQueda = pctToPx(curvaQuedaPct); }
+
+    function resize() {
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      curvaSubida = pctToPx(curvaSubidaPct); curvaQueda = pctToPx(curvaQuedaPct);
+    }
     window.addEventListener('resize', resize); resize();
 
+    // --- controles ---
     function pressionar() { if (estado === ESTADOS.PARADO) iniciarCiclo(); else if (estado === ESTADOS.SUBINDO) movimentoAtivo = true; }
     function soltar() { movimentoAtivo = false; }
+
     botaoEmpurrar.addEventListener('mousedown', e => { e.preventDefault(); pressionar(); });
     botaoEmpurrar.addEventListener('touchstart', e => { e.preventDefault(); pressionar(); }, { passive: false });
     botaoEmpurrar.addEventListener('mouseup', soltar);
     botaoEmpurrar.addEventListener('touchend', soltar, { passive: false });
 
     botaoSuicidar.addEventListener('click', () => {
-      if (estado !== ESTADOS.SUICIDIO) {
-        estado = ESTADOS.SUICIDIO;
-        suicidou = true;
-        progressoQueda = 0;
-        velQueda = 0.008;
-      }
+      if (estado !== ESTADOS.SUICIDIO) { estado = ESTADOS.SUICIDIO; progressoQueda = 0; velQueda = 0.008; }
     });
 
+    // --- movimento / física ---
     function cubicBezierPoint(t, p0, p1, p2, p3) {
       const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
       const a = lerp(p0, p1, t), b = lerp(p1, p2, t), c = lerp(p2, p3, t);
@@ -346,21 +179,37 @@
     let progressoSubida = 0, velSubida = 0, progressoQueda = 0, velQueda = 0;
     let maxVelSubida = 0.01, aceleracaoSubida = 0.003, desaceleraSubida = 0.9;
     let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
+
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    async function salvarScore(nome, score) {
-      const scoresRef = ref(db, 'scores');
-      await set(push(scoresRef), { nome: nome, score: score });
-      atualizarRanking();
+    // === Firebase: salvar apenas se entra no top10 ===
+    async function salvarScoreSeTop10(nome, score) {
+      try {
+        const scoresRefQ = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
+        const snapshot = await get(scoresRefQ);
+        const scores = [];
+        snapshot.forEach(snap => { const val = snap.val(); if (val && typeof val.score === 'number') scores.push({ key: snap.key, nome: val.nome, score: val.score }); });
+        scores.sort((a, b) => b.score - a.score);
+
+        if (scores.length < 10 || score > scores[scores.length - 1].score) {
+          await set(push(ref(db, 'scores')), { nome, score });
+          return true; // entrou
+        }
+        return false; // não entrou
+      } catch (err) {
+        console.error('Erro ao verificar/salvar score:', err);
+        return false;
+      }
     }
 
+    // Atualiza o ranking exibido (apenas 10 maiores)
     function atualizarRanking() {
       const scoresRef = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
       onValue(scoresRef, snapshot => {
         rankingList.innerHTML = '';
         const scores = [];
-        snapshot.forEach(snap => { const val = snap.val(); scores.push({ nome: val.nome, score: val.score }); });
+        snapshot.forEach(snap => { const v = snap.val(); if (v) scores.push({ nome: v.nome, score: v.score }); });
         scores.sort((a, b) => b.score - a.score);
         scores.forEach((s, i) => {
           const li = document.createElement('li');
@@ -370,7 +219,7 @@
       });
     }
 
-    // ... dentro da função fimDoJogoSuicidio
+    // === fim do jogo suicídio: pede nome e tenta salvar ===
     async function fimDoJogoSuicidio() {
       const scoreAtual = montanhas;
       montanhas = 0;
@@ -378,38 +227,48 @@
 
       const caixaNome = document.createElement('div');
       caixaNome.className = 'caixa-nome';
-      caixaNome.innerHTML = `<p>Você atingiu ${scoreAtual} montanhas!</p>
-    <p>Insira seu nome para o ranking:</p>
-    <input type="text" id="nome-jogador" placeholder="Seu nome..." style="font-size:3vh;padding:5px;margin:5px;"><br>
-    <button id="salvar-absurdo" style="font-size:3vh;padding:5px 10px;margin-top:10px;
-    background: linear-gradient(135deg,#ff004d,#ffb347); border:3px solid black; border-radius:12px; cursor:pointer; color:black;">Salvar</button>`;
+      caixaNome.innerHTML = `
+        <p>Você atingiu <strong>${scoreAtual}</strong> montanhas!</p>
+        <p>Insira seu nome para o ranking:</p>
+        <input type="text" id="nome-jogador" placeholder="Seu nome..." />
+        <div style="margin-top:10px">
+          <button id="salvar-absurdo">Salvar</button>
+          <button id="cancelar-absurdo" style="margin-left:10px;">Cancelar</button>
+        </div>
+      `;
       document.body.appendChild(caixaNome);
 
-      document.getElementById('salvar-absurdo').addEventListener('click', () => {
-        const nome = document.getElementById('nome-jogador').value || 'Anônimo';
-        // Chame salvarScore com o nome e o score atual
-        salvarScore(nome, scoreAtual).then(() => {
-          document.body.removeChild(caixaNome);
-          // Reinicie o estado do jogo
-          estado = ESTADOS.PARADO;
-          progressoSubida = progressoQueda = 0;
-          velSubida = velQueda = 0;
-          movimentoAtivo = false;
-        });
+      document.getElementById('salvar-absurdo').addEventListener('click', async () => {
+        const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
+        const entrou = await salvarScoreSeTop10(nome, scoreAtual);
+        if (entrou) {
+          // opcional: feedback rápido
+          alert('Parabéns — você entrou no TOP 10!');
+        } else {
+          alert('Não entrou no TOP 10 — tente novamente!');
+        }
+        document.body.removeChild(caixaNome);
+        estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false;
+      });
+
+      document.getElementById('cancelar-absurdo').addEventListener('click', () => {
+        document.body.removeChild(caixaNome);
+        estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false;
       });
     }
 
+    // === desenho de fundo otimizado ===
     function desenharFundo() {
-      if (!IMG_BG.width) return;
-      const scale = canvas.width / IMG_BG.width;
-      let w = IMG_BG.width * scale;
-      let h = IMG_BG.height * scale;
-      if (h < canvas.height) { const extra = Math.min(canvas.height / h, 1.1); w *= extra; h *= extra; }
+      if (!IMG_BG.complete) return;
+      const scale = Math.max(canvas.width / IMG_BG.width, canvas.height / IMG_BG.height);
+      const w = IMG_BG.width * scale;
+      const h = IMG_BG.height * scale;
       ctx.drawImage(IMG_BG, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
     }
 
+    // === loop principal e renderização detalhada ===
     function loop() {
-      // Atualiza estados
+      // lógica de estados
       if (estado === ESTADOS.SUBINDO) {
         if (movimentoAtivo) { velSubida += aceleracaoSubida; if (velSubida > maxVelSubida) velSubida = maxVelSubida; }
         else { velSubida *= desaceleraSubida; if (velSubida < 0.0001) velSubida = 0; }
@@ -417,80 +276,64 @@
         if (progressoSubida >= 1) { progressoSubida = 1; estado = ESTADOS.PAUSA; pausaFrames = 15; progressoQueda = 0; velQueda = aceleracaoQuedaInit; }
       } else if (estado === ESTADOS.PAUSA) { pausaFrames--; if (pausaFrames <= 0) estado = ESTADOS.QUEDA; }
       else if (estado === ESTADOS.QUEDA) { velQueda += gravidadeQueda; progressoQueda += velQueda; if (progressoQueda >= 1) { reiniciarParaParado(); } }
-      else if (estado === ESTADOS.SUICIDIO) {
-        velQueda += gravidadeQueda;
-        progressoQueda += velQueda;
-        if (progressoQueda >= 1) { estado = ESTADOS.PARADO; fimDoJogoSuicidio(); }
-      }
+      else if (estado === ESTADOS.SUICIDIO) { velQueda += gravidadeQueda; progressoQueda += velQueda; if (progressoQueda >= 1) { estado = ESTADOS.PARADO; fimDoJogoSuicidio(); } }
 
-      // Limpa tela
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // limpar
+      ctx.clearRect(0,0,canvas.width,canvas.height);
       desenharFundo();
 
-      // Desenha Sísifo e pedra
+      // calcular posições via bezier
+      const pSis = cubicBezierPoint(progressoSubida, ...curvaSubida);
+      const pQueda = cubicBezierPoint(progressoQueda, ...curvaQueda);
+
+      // dimensões relativos
+      const sisW = canvas.width * 0.12; const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
+      const pedW = sisW * 0.7; const pedH = pedW;
+
       if (estado === ESTADOS.SUICIDIO) {
-        const q = cubicBezierPoint(progressoQueda, ...curvaQueda);
-
-        // Sísifo com pequeno desvio horizontal
-        const sisW = canvas.width * 0.1;
-        const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-        const sisDesvio = Math.sin(progressoQueda * Math.PI * 0.5) * 40; // desvio lateral
-        const sx = q.x - sisW / 2 + sisDesvio;
-        const sy = q.y - sisH / 2;
-
+        const q = pQueda;
+        const sisDesvio = Math.sin(progressoQueda * Math.PI * 0.5) * (canvas.width * 0.04);
+        const sx = q.x - sisW/2 + sisDesvio; const sy = q.y - sisH/2;
         if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
-        // Pedra sobre Sísifo com rotação e desvio aleatório
-        const pedW = canvas.width * 0.08, pedH = pedW;
-        const pedDesvio = Math.cos(progressoQueda * Math.PI * 1.5) * 35;
-        const px = q.x - pedW / 2 + pedDesvio;
-        const py = q.y - pedH / 2;
-        ctx.save();
-        ctx.translate(px + pedW / 2, py + pedH / 2);
-        ctx.rotate(progressoQueda * Math.PI * 1.5);
-        if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH);
-        ctx.restore();
+        const px = q.x - pedW/2 + Math.cos(progressoQueda * Math.PI * 1.5) * (canvas.width * 0.035);
+        const py = q.y - pedH/2;
+        ctx.save(); ctx.translate(px + pedW/2, py + pedH/2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH); ctx.restore();
 
       } else {
-        // Código original para subida, pausa e queda
-        const sis = cubicBezierPoint(progressoSubida, ...curvaSubida);
-        const sisW = canvas.width * 0.1, sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-        const sx = sis.x - sisW / 2, sy = sis.y - sisH + 6;
+        // subida/pause/queda regular
+        const s = pSis;
+        const sx = s.x - sisW/2; const sy = s.y - sisH + (canvas.height*0.01);
         if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
         if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
-          const pedW = sisW * 0.7, pedH = pedW;
-          const px = sx + sisW * 0.4, py = sy - pedH * 0.7;
+          const px = sx + sisW * 0.4; const py = sy - pedH * 0.7;
           if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, px, py, pedW, pedH);
         }
+
         if (estado === ESTADOS.QUEDA) {
-          const q = cubicBezierPoint(progressoQueda, ...curvaQueda);
-          const pedW = canvas.width * 0.06, pedH = pedW;
-          const px = q.x - pedW / 2, py = q.y - pedH / 2;
-          ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 3.6);
-          if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH);
-          ctx.restore();
+          const q = pQueda;
+          const px = q.x - pedW/2; const py = q.y - pedH/2;
+          ctx.save(); ctx.translate(px + pedW/2, py + pedH/2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH); ctx.restore();
         }
       }
 
-      // Atualiza placar
-      if (mostrarScore) {
-        placarEl.textContent = ''; // apaga o texto quando checkbox ativada
-      } else {
-        placarEl.textContent = `Montanhas: ${montanhas}`; // mostra normalmente
-      }
+      // placar
+      if (mostrarScore) placarEl.textContent = '';
+      else placarEl.textContent = `Montanhas: ${montanhas}`;
 
-
-      // Próximo frame
       requestAnimationFrame(loop);
     }
 
+    // start loop
     requestAnimationFrame(loop);
 
-
+    // inicializa ranking no carregamento
     atualizarRanking();
+
+    // expose algumas funções para debug via console (opcional)
+    window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
   </script>
-</body>aa
+</body>
 
 </html>
