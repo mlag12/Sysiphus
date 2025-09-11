@@ -14,17 +14,45 @@
     }
 
     /* reset mínimo */
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: #000; color: #fff; font-family: "Courier New", monospace; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: "Courier New", monospace;
+    }
 
     /* canvas full screen */
-    #game { display: block; width: 100vw; height: 100vh; background: #000; }
+    #game {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+    }
 
     /* UI overlay */
-    #ui { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
+    #ui {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
 
     #placar {
-      position: absolute; top: 2%; left: 2%; color: #fff; font-weight: 800; font-size: 3vh; text-shadow: 2px 2px 6px rgba(0,0,0,0.8); z-index: 110; white-space: nowrap;
+      position: absolute;
+      top: 2%;
+      left: 2%;
+      color: #fff;
+      font-weight: 800;
+      font-size: 3vh;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+      z-index: 110;
+      white-space: nowrap;
     }
 
     #botao-container {
@@ -35,16 +63,20 @@
       z-index: 120;
       pointer-events: auto;
       display: flex;
-      flex-direction: column; /* Empilha os botões em telas menores */
+      flex-direction: column;
+      /* Empilha os botões em telas menores */
       align-items: center;
-      gap: 16px; /* Aumenta o espaço entre os botões */
+      gap: 16px;
+      /* Aumenta o espaço entre os botões */
     }
 
     #botao-container button {
-      display: block; margin: 0;
+      display: block;
+      margin: 0;
       /* Aumenta o padding para uma área de toque maior */
       padding: 2.5vh 8vw;
-      border-radius: 15px; /* Cantos mais arredondados */
+      border-radius: 15px;
+      /* Cantos mais arredondados */
       border: 4px solid var(--btn-border);
       background: var(--btn-bg);
       color: #fff;
@@ -53,66 +85,169 @@
       cursor: pointer;
       /* Aumenta a fonte para melhor legibilidade */
       font-size: 5vw;
-      min-width: 200px; /* Garante uma largura mínima */
+      min-width: 200px;
+      /* Garante uma largura mínima */
       text-align: center;
     }
 
     /* Ajuste para telas mais largas */
     @media (min-width: 600px) {
       #botao-container {
-        flex-direction: row; /* Coloca os botões lado a lado em telas maiores */
-        gap: 30px; /* Mais espaço horizontal entre botões */
+        flex-direction: row;
+        /* Coloca os botões lado a lado em telas maiores */
+        gap: 30px;
+        /* Mais espaço horizontal entre botões */
       }
+
       #botao-container button {
-        font-size: 20px; /* Tamanho de fonte fixo para telas maiores */
-        padding: 1.5vh 4vw; /* Ajusta padding para telas maiores */
+        font-size: 20px;
+        /* Tamanho de fonte fixo para telas maiores */
+        padding: 1.5vh 4vw;
+        /* Ajusta padding para telas maiores */
         min-width: 160px;
       }
     }
 
-    #menu-container { position: fixed; top: 2%; right: 2%; z-index:130; pointer-events: auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-    #botao-menu { cursor:pointer; font-size: 16px; background: var(--btn-bg); border:2px solid #000; padding:6px 10px; border-radius:8px; }
-
-    #menu-itens { display:none; flex-direction:column; align-items:flex-end; gap:6px; margin-top:4px; }
-    #menu-container.open #menu-itens { display:flex; }
-
-    #menu-itens button, #menu-itens label {
-      display:flex; align-items:center; justify-content:flex-end; gap:8px; cursor:pointer; font-size:15px; background: var(--btn-bg); border:2px solid #000; padding:8px 12px; /* Aumenta padding */ border-radius:8px; white-space:nowrap;
+    #menu-container {
+      position: fixed;
+      top: 2%;
+      right: 2%;
+      z-index: 130;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
     }
-    #menu-itens label input { margin-left:0; transform: scale(1.1); }
+
+    #botao-menu {
+      cursor: pointer;
+      font-size: 16px;
+      background: var(--btn-bg);
+      border: 2px solid #000;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    #menu-itens {
+      display: none;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    #menu-container.open #menu-itens {
+      display: flex;
+    }
+
+    #menu-itens button,
+    #menu-itens label {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      background: var(--btn-bg);
+      border: 2px solid #000;
+      padding: 8px 12px;
+      /* Aumenta padding */
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    #menu-itens label input {
+      margin-left: 0;
+      transform: scale(1.1);
+    }
 
     /* ranking modal */
     #ranking-absurdo {
-      display:none; position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(2deg);
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(2deg);
       /* Aumenta o padding para melhor visualização em telas maiores */
       padding: 5vh 8vw;
-      background: rgba(0,0,0,0.95); border: 4px dashed red; color:white; font-family:"Courier New", monospace;
+      background: rgba(0, 0, 0, 0.95);
+      border: 4px dashed red;
+      color: white;
+      font-family: "Courier New", monospace;
       /* Aumenta a fonte do modal */
-      font-size: 3.5vh; text-align:center; z-index:1000; max-height:70vh; overflow-y:auto;
+      font-size: 3.5vh;
+      text-align: center;
+      z-index: 1000;
+      max-height: 70vh;
+      overflow-y: auto;
     }
 
-    #ranking-absurdo h1 { font-family: Impact, fantasy; font-size:6vh; color:var(--accent); text-shadow: 2px 2px 6px rgba(255,0,77,0.5); margin-bottom:2vh; border-bottom:2px dashed yellow; padding-bottom:1vh; }
-    #ranking-list { list-style:none; padding:0; margin:0; }
-    #ranking-list li { margin-bottom:1.2vh; color:var(--neon); font-weight:bold; text-shadow:1px 1px 3px rgba(0,255,255,0.4); }
+    #ranking-absurdo h1 {
+      font-family: Impact, fantasy;
+      font-size: 6vh;
+      color: var(--accent);
+      text-shadow: 2px 2px 6px rgba(255, 0, 77, 0.5);
+      margin-bottom: 2vh;
+      border-bottom: 2px dashed yellow;
+      padding-bottom: 1vh;
+    }
+
+    #ranking-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #ranking-list li {
+      margin-bottom: 1.2vh;
+      color: var(--neon);
+      font-weight: bold;
+      text-shadow: 1px 1px 3px rgba(0, 255, 255, 0.4);
+    }
 
     /* name input box */
     .caixa-nome {
-      position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(-5deg);
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-5deg);
       /* Aumenta o padding e a fonte para melhor experiência mobile */
       padding: 5vh 8vw;
-      background: linear-gradient(45deg, #ff00ff, #00ffff); border:4px dashed yellow; color:white; font-family:"Courier New", monospace;
-      font-size: 4.5vh; text-align:center; z-index:999;
+      background: linear-gradient(45deg, #ff00ff, #00ffff);
+      border: 4px dashed yellow;
+      color: white;
+      font-family: "Courier New", monospace;
+      font-size: 4.5vh;
+      text-align: center;
+      z-index: 999;
     }
+
     .caixa-nome p {
-      line-height: 1.5; /* Melhora o espaçamento entre linhas */
+      line-height: 1.5;
+      /* Melhora o espaçamento entre linhas */
     }
+
     .caixa-nome input {
-      font-size: 3vh; /* Aumenta o tamanho da fonte do input */
-      padding: 12px; /* Aumenta o padding do input */
-      width: 100%; /* Garante que o input ocupe a largura disponível */
-      border-radius:8px; border:2px solid #000; margin-top: 10px;
+      font-size: 3vh;
+      /* Aumenta o tamanho da fonte do input */
+      padding: 12px;
+      /* Aumenta o padding do input */
+      width: 100%;
+      /* Garante que o input ocupe a largura disponível */
+      border-radius: 8px;
+      border: 2px solid #000;
+      margin-top: 10px;
     }
-    .caixa-nome button { margin-top: 16px; /* Aumenta margem superior */ font-size:2.8vh; padding:10px 20px; border-radius:10px; cursor:pointer; }
+
+    .caixa-nome button {
+      margin-top: 16px;
+      /* Aumenta margem superior */
+      font-size: 2.8vh;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -311,11 +446,22 @@
     // === desenho de fundo otimizado ===
     function desenharFundo() {
       if (!IMG_BG.complete) return;
-      const scale = Math.max(canvas.width / IMG_BG.width, canvas.height / IMG_BG.height);
+
+      // calcula a escala para caber toda a imagem na tela sem cortar (fit)
+      const scaleX = canvas.width / IMG_BG.width;
+      const scaleY = canvas.height / IMG_BG.height;
+      const scale = Math.min(scaleX, scaleY); // fit: menor escala para caber tudo
+
       const w = IMG_BG.width * scale;
       const h = IMG_BG.height * scale;
-      ctx.drawImage(IMG_BG, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+
+      // centraliza a imagem
+      const offsetX = (canvas.width - w) / 2;
+      const offsetY = (canvas.height - h) / 2;
+
+      ctx.drawImage(IMG_BG, offsetX, offsetY, w, h);
     }
+
 
     // === loop principal e renderização detalhada ===
     function loop() {
@@ -330,7 +476,7 @@
       else if (estado === ESTADOS.SUICIDIO) { velQueda += gravidadeQueda; progressoQueda += velQueda; if (progressoQueda >= 1) { estado = ESTADOS.PARADO; fimDoJogoSuicidio(); } }
 
       // limpar
-      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       desenharFundo();
 
       // calcular posições via bezier
@@ -344,17 +490,17 @@
       if (estado === ESTADOS.SUICIDIO) {
         const q = pQueda;
         const sisDesvio = Math.sin(progressoQueda * Math.PI * 0.5) * (canvas.width * 0.04);
-        const sx = q.x - sisW/2 + sisDesvio; const sy = q.y - sisH/2;
+        const sx = q.x - sisW / 2 + sisDesvio; const sy = q.y - sisH / 2;
         if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
-        const px = q.x - pedW/2 + Math.cos(progressoQueda * Math.PI * 1.5) * (canvas.width * 0.035);
-        const py = q.y - pedH/2;
-        ctx.save(); ctx.translate(px + pedW/2, py + pedH/2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH); ctx.restore();
+        const px = q.x - pedW / 2 + Math.cos(progressoQueda * Math.PI * 1.5) * (canvas.width * 0.035);
+        const py = q.y - pedH / 2;
+        ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
 
       } else {
         // subida/pause/queda regular
         const s = pSis;
-        const sx = s.x - sisW/2; const sy = s.y - sisH + (canvas.height*0.01);
+        const sx = s.x - sisW / 2; const sy = s.y - sisH + (canvas.height * 0.01);
         if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
         if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
@@ -364,8 +510,8 @@
 
         if (estado === ESTADOS.QUEDA) {
           const q = pQueda;
-          const px = q.x - pedW/2; const py = q.y - pedH/2;
-          ctx.save(); ctx.translate(px + pedW/2, py + pedH/2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW/2, -pedH/2, pedW, pedH); ctx.restore();
+          const px = q.x - pedW / 2; const py = q.y - pedH / 2;
+          ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
         }
       }
 
