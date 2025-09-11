@@ -18,7 +18,7 @@
     html, body { height: 100%; margin: 0; background: #000; color: #fff; font-family: "Courier New", monospace; }
 
     /* canvas full screen */
-    #game { display:block; width:100vw; height:100vh; background:#000; }
+    #game { display: block; width: 100vw; height: 100vh; background: #000; }
 
     /* UI overlay */
     #ui { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
@@ -28,12 +28,46 @@
     }
 
     #botao-container {
-      position: fixed; bottom: 3%; left: 50%; transform: translateX(-50%); z-index: 120; pointer-events: auto; display:flex; flex-direction:column; align-items:center; gap: 8px;
+      position: fixed;
+      bottom: 3%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 120;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column; /* Empilha os botões em telas menores */
+      align-items: center;
+      gap: 16px; /* Aumenta o espaço entre os botões */
     }
 
     #botao-container button {
-      display:block; margin:0; padding: 2vh 4vw; border-radius: 12px; border: 3px solid var(--btn-border); background: var(--btn-bg); color:#fff; font-weight:900; letter-spacing:2px; cursor:pointer; font-size:4vw;
-      min-width: 160px; text-align:center;
+      display: block; margin: 0;
+      /* Aumenta o padding para uma área de toque maior */
+      padding: 2.5vh 8vw;
+      border-radius: 15px; /* Cantos mais arredondados */
+      border: 4px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 2px;
+      cursor: pointer;
+      /* Aumenta a fonte para melhor legibilidade */
+      font-size: 5vw;
+      min-width: 200px; /* Garante uma largura mínima */
+      text-align: center;
+    }
+
+    /* Ajuste para telas mais largas */
+    @media (min-width: 600px) {
+      #botao-container {
+        flex-direction: row; /* Coloca os botões lado a lado em telas maiores */
+        gap: 30px; /* Mais espaço horizontal entre botões */
+      }
+      #botao-container button {
+        font-size: 20px; /* Tamanho de fonte fixo para telas maiores */
+        padding: 1.5vh 4vw; /* Ajusta padding para telas maiores */
+        min-width: 160px;
+      }
     }
 
     #menu-container { position: fixed; top: 2%; right: 2%; z-index:130; pointer-events: auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
@@ -42,12 +76,19 @@
     #menu-itens { display:none; flex-direction:column; align-items:flex-end; gap:6px; margin-top:4px; }
     #menu-container.open #menu-itens { display:flex; }
 
-    #menu-itens button, #menu-itens label { display:flex; align-items:center; justify-content:flex-end; gap:8px; cursor:pointer; font-size:15px; background: var(--btn-bg); border:2px solid #000; padding:6px 10px; border-radius:8px; white-space:nowrap; }
+    #menu-itens button, #menu-itens label {
+      display:flex; align-items:center; justify-content:flex-end; gap:8px; cursor:pointer; font-size:15px; background: var(--btn-bg); border:2px solid #000; padding:8px 12px; /* Aumenta padding */ border-radius:8px; white-space:nowrap;
+    }
     #menu-itens label input { margin-left:0; transform: scale(1.1); }
 
     /* ranking modal */
     #ranking-absurdo {
-      display:none; position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(2deg); padding:3vh 5vw; background: rgba(0,0,0,0.95); border: 4px dashed red; color:white; font-family:"Courier New", monospace; font-size:3vh; text-align:center; z-index:1000; max-height:70vh; overflow-y:auto;
+      display:none; position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(2deg);
+      /* Aumenta o padding para melhor visualização em telas maiores */
+      padding: 5vh 8vw;
+      background: rgba(0,0,0,0.95); border: 4px dashed red; color:white; font-family:"Courier New", monospace;
+      /* Aumenta a fonte do modal */
+      font-size: 3.5vh; text-align:center; z-index:1000; max-height:70vh; overflow-y:auto;
     }
 
     #ranking-absurdo h1 { font-family: Impact, fantasy; font-size:6vh; color:var(--accent); text-shadow: 2px 2px 6px rgba(255,0,77,0.5); margin-bottom:2vh; border-bottom:2px dashed yellow; padding-bottom:1vh; }
@@ -55,12 +96,23 @@
     #ranking-list li { margin-bottom:1.2vh; color:var(--neon); font-weight:bold; text-shadow:1px 1px 3px rgba(0,255,255,0.4); }
 
     /* name input box */
-    .caixa-nome { position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(-5deg); padding:3vh 5vw; background: linear-gradient(45deg, #ff00ff, #00ffff); border:4px dashed yellow; color:white; font-family:"Courier New", monospace; font-size:4vh; text-align:center; z-index:999; }
-    .caixa-nome input { font-size: 2.5vh; padding: 8px; width: 80%; border-radius:8px; border:2px solid #000; }
-    .caixa-nome button { margin-top: 12px; font-size:2.8vh; padding:6px 12px; border-radius:10px; cursor:pointer; }
-
-    /* small responsive tweaks */
-    @media (min-width: 800px) { #botao-container button { font-size: 20px; } }
+    .caixa-nome {
+      position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) rotate(-5deg);
+      /* Aumenta o padding e a fonte para melhor experiência mobile */
+      padding: 5vh 8vw;
+      background: linear-gradient(45deg, #ff00ff, #00ffff); border:4px dashed yellow; color:white; font-family:"Courier New", monospace;
+      font-size: 4.5vh; text-align:center; z-index:999;
+    }
+    .caixa-nome p {
+      line-height: 1.5; /* Melhora o espaçamento entre linhas */
+    }
+    .caixa-nome input {
+      font-size: 3vh; /* Aumenta o tamanho da fonte do input */
+      padding: 12px; /* Aumenta o padding do input */
+      width: 100%; /* Garante que o input ocupe a largura disponível */
+      border-radius:8px; border:2px solid #000; margin-top: 10px;
+    }
+    .caixa-nome button { margin-top: 16px; /* Aumenta margem superior */ font-size:2.8vh; padding:10px 20px; border-radius:10px; cursor:pointer; }
   </style>
 </head>
 
@@ -80,12 +132,12 @@
       <div id="menu-itens">
         <button id="botao-ranking">Ranking</button>
         <label><input type="checkbox" id="mostrar-score"> Mostrar Score</label>
-
-        <div id="ranking-absurdo">
-          <h1>TOP 10:</h1>
-          <ul id="ranking-list"></ul>
-        </div>
       </div>
+    </div>
+
+    <div id="ranking-absurdo">
+      <h1>TOP 10:</h1>
+      <ul id="ranking-list"></ul>
     </div>
   </div>
 
@@ -231,7 +283,7 @@
         <p>Você atingiu <strong>${scoreAtual}</strong> montanhas!</p>
         <p>Insira seu nome para o ranking:</p>
         <input type="text" id="nome-jogador" placeholder="Seu nome..." />
-        <div style="margin-top:10px">
+        <div style="margin-top:16px">
           <button id="salvar-absurdo">Salvar</button>
           <button id="cancelar-absurdo" style="margin-left:10px;">Cancelar</button>
         </div>
@@ -242,7 +294,6 @@
         const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
         const entrou = await salvarScoreSeTop10(nome, scoreAtual);
         if (entrou) {
-          // opcional: feedback rápido
           alert('Parabéns — você entrou no TOP 10!');
         } else {
           alert('Não entrou no TOP 10 — tente novamente!');
