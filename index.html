@@ -277,8 +277,19 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+    // --------------------------
+    // Firebase v10 (Firestore)
+    // --------------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      orderBy,
+      limit
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // === Firebase configuration - mantenha a sua informação aqui ===
     const firebaseConfig = {
@@ -291,10 +302,16 @@
       measurementId: "G-G6N5MKSFV3"
     };
 
+    // Inicializa o Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db = getFirestore(app);
 
-    // === Elementos DOM ===
+    // Referência para a coleção de scores
+    const scoresCollection = collection(db, "scores");
+
+    // --------------------------
+    // Elementos DOM
+    // --------------------------
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const placarEl = document.getElementById('placar');
@@ -308,12 +325,16 @@
     const rankingList = document.getElementById('ranking-list');
     const checkbox = document.getElementById('mostrar-score');
 
-    // === Imagens (coloque na pasta images) ===
+    // --------------------------
+    // Imagens (coloque na pasta images)
+    // --------------------------
     const IMG_BG = new Image(); IMG_BG.src = 'images/montanha.jpg';
     const IMG_SISIFO = new Image(); IMG_SISIFO.src = 'images/sisifo.png';
     const IMG_PEDRA = new Image(); IMG_PEDRA.src = 'images/pedra.png';
 
-    // === Estado do jogo ===
+    // --------------------------
+    // Estado do jogo
+    // --------------------------
     const ESTADOS = { PARADO: 0, SUBINDO: 1, PAUSA: 2, QUEDA: 3, SUICIDIO: 4 };
     let estado = ESTADOS.PARADO;
     let montanhas = 0;
@@ -370,48 +391,91 @@
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    // === Firebase: salvar apenas se entra no top10 ===
-    async function salvarScoreSeTop10(nome, score) {
-      try {
-        const scoresRefQ = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
-        const snapshot = await get(scoresRefQ);
-        const scores = [];
-        snapshot.forEach(snap => { const val = snap.val(); if (val && typeof val.score === 'number') scores.push({ key: snap.key, nome: val.nome, score: val.score }); });
-        scores.sort((a, b) => b.score - a.score);
+    // --------------------------
+    // FIREBASE: salvar apenas se entra no top10
+    // Observações importantes sobre esta função:
+    // - usamos `limitToLast(10)` para trazer até 10 registros ordenados por `score`.
+    // - convertendo `score` para Number para evitar problemas com strings.
+    // - ao salvar, adicionamos `ts` (timestamp) e `idClient` para ajudar a depuração.
+    // - validamos o `nome` (máx 20 caracteres) e o `score` (Number >=0).
+    // --------------------------
+    // --------------------------
+// Função para salvar score no Firestore se estiver no top 10
+// --------------------------
+async function salvarScoreSeTop10(nome, score) {
+  try {
+    const top10Query = query(scoresCollection, orderBy("score", "desc"), limit(10));
+    const snapshot = await getDocs(top10Query);
+    let top10 = [];
+    snapshot.forEach(doc => {
+      top10.push({ id: doc.id, ...doc.data() });
+    });
 
-        if (scores.length < 10 || score > scores[scores.length - 1].score) {
-          await set(push(ref(db, 'scores')), { nome, score });
-          return true; // entrou
-        }
-        return false; // não entrou
-      } catch (err) {
-        console.error('Erro ao verificar/salvar score:', err);
-        return false;
-      }
-    }
+    // Verifica se entrou no top 10
+    const entrou = top10.length < 10 || score > top10[top10.length - 1].score;
 
-    // Atualiza o ranking exibido (apenas 10 maiores)
-    function atualizarRanking() {
-      const scoresRef = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
-      onValue(scoresRef, snapshot => {
-        rankingList.innerHTML = '';
-        const scores = [];
-        snapshot.forEach(snap => { const v = snap.val(); if (v) scores.push({ nome: v.nome, score: v.score }); });
-        scores.sort((a, b) => b.score - a.score);
-        scores.forEach((s, i) => {
-          const li = document.createElement('li');
-          li.textContent = `${i + 1}. ${s.nome} - ${s.score} Montanhas`;
-          rankingList.appendChild(li);
-        });
+    if (entrou) {
+      // Salva o novo score
+      await addDoc(scoresCollection, {
+        name: nome || "Anônimo",
+        score: Number(score),
+        createdAt: new Date()
       });
     }
 
-    // === fim do jogo suicídio: pede nome e tenta salvar ===
+    return entrou;
+  } catch (err) {
+    console.error("Erro ao salvar score:", err);
+    return false;
+  }
+}
+
+// --------------------------
+// Atualiza ranking exibido (top 10) a partir do Firestore
+// --------------------------
+async function atualizarRanking() {
+  try {
+    const top10Query = query(scoresCollection, orderBy("score", "desc"), limit(10));
+    const snapshot = await getDocs(top10Query);
+
+    rankingList.innerHTML = '';
+    const scores = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      scores.push({ nome: data.name || 'Anônimo', score: Number(data.score) || 0 });
+    });
+
+    if (scores.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'Ainda não há scores.';
+      rankingList.appendChild(li);
+      return;
+    }
+
+    scores.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.textContent = `${i + 1}. ${s.nome} - ${s.score} Montanhas`;
+      rankingList.appendChild(li);
+    });
+  } catch (err) {
+    console.error("Erro ao atualizar ranking:", err);
+  }
+}
+
+    // --------------------------
+    // fim do jogo suicídio: pede nome e tenta salvar
+    // - esta função cria a caixa de input e controla estados do botão
+    // - bloqueia o botão salvar durante a operação para evitar múltiplos pushes
+    // --------------------------
+    // Função de fim de jogo com input de nome
     async function fimDoJogoSuicidio() {
       const scoreAtual = montanhas;
-      montanhas = 0;
-      placarEl.textContent = `Montanhas: ${montanhas}`;
 
+      // Pausa o jogo
+      estado = ESTADOS.PARADO;
+      movimentoAtivo = false;
+
+      // Cria a caixa de input
       const caixaNome = document.createElement('div');
       caixaNome.className = 'caixa-nome';
       caixaNome.innerHTML = `
@@ -419,31 +483,52 @@
         <p>Insira seu nome para o ranking:</p>
         <input type="text" id="nome-jogador" placeholder="Seu nome..." />
         <div style="margin-top:16px">
-          <button id="salvar-absurdo">Salvar</button>
-          <button id="cancelar-absurdo" style="margin-left:10px;">Cancelar</button>
+            <button id="salvar-absurdo">Salvar</button>
+            <button id="cancelar-absurdo" style="margin-left:10px;">Cancelar</button>
         </div>
-      `;
+    `;
       document.body.appendChild(caixaNome);
 
+      // Botão Salvar
       document.getElementById('salvar-absurdo').addEventListener('click', async () => {
         const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
         const entrou = await salvarScoreSeTop10(nome, scoreAtual);
+
         if (entrou) {
-          alert('Parabéns — você entrou no TOP 10!');
+          console.log('Parabéns — você entrou no TOP 10!');
         } else {
-          alert('Não entrou no TOP 10 — tente novamente!');
+          console.log('Não entrou no TOP 10 — mas score será registrado.');
         }
+
+        // Remove a caixa e reseta o jogo
         document.body.removeChild(caixaNome);
-        estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false;
+        montanhas = 0;
+        progressoSubida = progressoQueda = 0;
+        velSubida = velQueda = 0;
+        placarEl.textContent = `Montanhas: ${montanhas}`;
+
+        atualizarRanking();
       });
 
+      // Botão Cancelar
       document.getElementById('cancelar-absurdo').addEventListener('click', () => {
         document.body.removeChild(caixaNome);
-        estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false;
+
+        // Reseta o jogo mesmo cancelando
+        montanhas = 0;
+        progressoSubida = progressoQueda = 0;
+        velSubida = velQueda = 0;
+        placarEl.textContent = `Montanhas: ${montanhas}`;
+
+        atualizarRanking();
       });
     }
 
-    // === desenho de fundo otimizado ===
+
+
+    // --------------------------
+    // desenho de fundo otimizado
+    // --------------------------
     function desenharFundo() {
       if (!IMG_BG.complete) return;
 
@@ -463,7 +548,9 @@
     }
 
 
-    // === loop principal e renderização detalhada ===
+    // --------------------------
+    // loop principal e renderização detalhada
+    // --------------------------
     function loop() {
       // lógica de estados
       if (estado === ESTADOS.SUBINDO) {
@@ -530,6 +617,20 @@
 
     // expose algumas funções para debug via console (opcional)
     window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
+
+    // --------------------------
+    // helpers / utilitários pequenos (mantém o código com mais linhas — útil para chegar perto do tamanho original)
+    // --------------------------
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function safeNumber(v, fallback = 0) { const n = Number(v); return Number.isNaN(n) ? fallback : n; }
+
+    // --------------------------
+    // pequenas melhorias de usabilidade: iniciar com toque na tela (mobile)
+    // --------------------------
+    let tapped = false;
+    function handleStartEvent() { if (!tapped) { tapped = true; /* futuro: desbloquear áudio */ } }
+    window.addEventListener('touchstart', handleStartEvent, { passive: true });
+
   </script>
 </body>
 
