@@ -411,21 +411,45 @@
 
 
 
-    function atualizarPedrasCaindo(px, py, pw, ph) {
-  for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
-    const pedra = pedrasCaindo[i];
-    pedra.y += pedra.velocidade;
+    function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
+      for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
+        const ped = pedrasCaindo[i];
 
-    if (colidiu(pedra.x, pedra.y, PEDRA_CAI_W, PEDRA_CAI_H, px, py, pw, ph)) {
-      estado = ESTADOS.GAMEOVER;
+        // Atualiza posição da pedra
+        ped.y += ped.velocidade;
+
+        // Desenhar pedra
+        if (IMG_PEDRA.complete) {
+          ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
+        }
+
+        // Checar colisão com o personagem
+        if (
+          ped.x < xPersonagem + wPersonagem &&
+          ped.x + PEDRA_CAI_W > xPersonagem &&
+          ped.y < yPersonagem + hPersonagem &&
+          ped.y + PEDRA_CAI_H > yPersonagem
+        ) {
+          // Colisão detectada: remove pedra e reinicia jogo
+          pedrasCaindo.splice(i, 1);
+
+          // Fim de jogo: chama função existente
+          fimDoJogoSuicidio();
+
+          // Reseta score e progresso
+          montanhas = 0;
+          progressoSubida = progressoQueda = 0;
+          velSubida = velQueda = 0;
+
+          return; // sai da função para não processar mais pedras neste frame
+        }
+
+        // Remove pedra se saiu da tela
+        if (ped.y > canvas.height) {
+          pedrasCaindo.splice(i, 1);
+        }
+      }
     }
-
-    if (pedra.y > canvas.height) {
-      pedrasCaindo.splice(i, 1); // remove pedra que saiu da tela
-    }
-  }
-}
-
 
 
 
