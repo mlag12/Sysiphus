@@ -401,11 +401,11 @@
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function gerarPedraCaindo() {
-      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // aleatório horizontal
-      const y = -PEDRA_CAI_H; // sempre acima do topo
-      const velocidade = 2 + Math.random() * 3; // velocidade aleatória
-      pedrasCaindo.push({ x, y, velocidade });
+    function gerarPedraCaindo(posX, larguraPedra) {
+      const x = posX !== undefined ? posX : Math.random() * (canvas.width - PEDRA_CAI_W); // Posição X definida ou aleatória
+      const y = -PEDRA_CAI_H; // Sempre acima do topo da tela
+      const velocidade = 2 + Math.random() * 3; // Velocidade aleatória para as pedras que caem
+      pedrasCaindo.push({ x, y, velocidade, width: larguraPedra || PEDRA_CAI_W, height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H });
     }
 
 
@@ -657,11 +657,24 @@
             gerarPedraCaindo(pedX, pedW);
           }
 
+          let pedraX;
+          const margemGap = pedW * 1.5; // Margem para o gap passar o personagem
+
+          const GAP_WIDTH = sisW * 1.5; // Largura do gap para o Sísifo passar
+          const MAX_X = canvas.width - PEDRA_CAI_W; // Posição X máxima para a pedra cair
+
+          if (Math.random() < 0.5) { // Slot 1: mais à esquerda
+            pedraX = Math.random() * (canvas.width / 2 - GAP_WIDTH); // Área à esquerda, garantindo espaço
+          } else { // Slot 2: mais à direita
+            pedraX = (canvas.width / 2 + GAP_WIDTH / 2) + Math.random() * (canvas.width / 2 - GAP_WIDTH / 2); // Área à direita
+          }
+
           const s = pSis;
           const sx = s.x - sisW / 2;
           const sy = s.y - sisH + (canvas.height * 0.01);
           const pedX = sx + sisW * 0.4;
           const pedY = sy - pedH * 0.7;
+
 
           // atualiza colisões e desenha pedras
           atualizarPedrasCaindo(sx, sy, sisW, sisH);  // personagem
