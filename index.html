@@ -398,6 +398,7 @@
     let maxVelSubida = 0.01, aceleracaoSubida = 0.003, desaceleraSubida = 0.9;
     let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
 
+    function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function iniciarCiclo() {
       estado = ESTADOS.SUBINDO;
       progressoSubida = 0;
@@ -416,20 +417,18 @@
       const sy = pInicial.y - sisH;
 
       // gera pedra inicial garantindo que não nasça sobre o personagem
-      // gera pedra inicial garantindo zona de exclusão
       gerarPedraCaindo(undefined, PEDRA_CAI_W, sx, sy, sisW, sisH);
     }
 
-
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
+    function gerarPedraCaindo(posX, larguraPedra) {
+      const x = posX !== undefined ? posX : Math.random() * (canvas.width - PEDRA_CAI_W); // Posição X definida ou aleatória
+      const y = -PEDRA_CAI_H; // Sempre acima do topo da tela
+      const velocidade = 2 + Math.random() * 3; // Velocidade aleatória para as pedras que caem
+      pedrasCaindo.push({ x, y, velocidade, width: larguraPedra || PEDRA_CAI_W, height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H });
     function gerarPedraCaindo(posX, larguraPedra, xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       const margemSegura = wPersonagem * 1.5; // evita nascer perto do personagem
-      // Limita a quantidade de pedras
-      if (pedrasCaindo.length >= 3) return;
-
-      // Zona de exclusão aumentada
-      const margemSegura = wPersonagem * 3; // aumentei para 3x a largura do personagem
       let x;
 
       if (posX !== undefined) {
