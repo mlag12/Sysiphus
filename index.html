@@ -421,11 +421,9 @@
         checkboxDarkMode.addEventListener('change', () => {
             darkModeAtivo = checkboxDarkMode.checked;
             document.body.classList.toggle('dark-mode', darkModeAtivo);
-            // Salvar preferência no localStorage
             localStorage.setItem('darkModePreference', darkModeAtivo);
         });
 
-        // Carregar preferência de Dark Mode ao iniciar
         const savedDarkMode = localStorage.getItem('darkModePreference');
         if (savedDarkMode !== null) {
             darkModeAtivo = JSON.parse(savedDarkMode);
@@ -446,9 +444,9 @@
         const PEDRA_CAI_W = 40; // largura padrão
         const PEDRA_CAI_H = 40; // altura padrão
         const NUM_PEDRAS_POR_GERACAO = 6;
-        // Velocidades revertidas para o estado anterior, como solicitado.
-        const VELOCIDADE_PEDRA_MIN = 6; 
-        const VELOCIDADE_PEDRA_MAX = 10;
+        // Velocidades agora aumentadas significativamente
+        const VELOCIDADE_PEDRA_MIN = 10; 
+        const VELOCIDADE_PEDRA_MAX = 18;
         const FREQUENCIA_GERACAO_PEDRA = 0.025; 
 
         // --- resize canvas & curves ---
@@ -461,7 +459,7 @@
         function resize() {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             curvaSubida = pctToPx(curvaSubidaPct); curvaQueda = pctToPx(curvaQuedaPct);
-            updateSliderHandlePosition(sliderRelativeX); // Garante que o handle se ajuste após o resize
+            updateSliderHandlePosition(sliderRelativeX);
         }
         window.addEventListener('resize', resize); resize();
 
@@ -484,11 +482,12 @@
             const handleX = minHandleX + (maxHandleX - minHandleX) * relativeX;
             sliderHandle.style.left = `${handleX - handleWidth / 2}px`;
 
-            const maxCharacterOffset = sliderWidth * 0.4; // Ajusta o deslocamento máximo para a largura do slider
+            const maxCharacterOffset = sliderWidth * 0.4;
             characterOffsetX = (sliderRelativeX - 0.5) * 2 * maxCharacterOffset;
         }
 
         function onSliderStart(event) {
+            // Corrigido: O slider só deve ser interativo se o jogo estiver SUBINDO ou PARADO
             if (estado !== ESTADOS.SUBINDO && estado !== ESTADOS.PARADO) return;
 
             event.preventDefault();
@@ -519,6 +518,7 @@
             sliderHandle.classList.remove('active');
         }
 
+        // Event listeners for touch and mouse
         sliderContainer.addEventListener('touchstart', onSliderStart, { passive: false });
         sliderContainer.addEventListener('touchmove', onSliderMove, { passive: false });
         sliderContainer.addEventListener('touchend', onSliderEnd, { passive: false });
@@ -552,7 +552,6 @@
             sliderRelativeX = 0.5;
             characterOffsetX = 0;
             updateSliderHandlePosition(sliderRelativeX);
-            // O CONTADOR DE MONTAINHAS NÃO É MAIS ZERADO AQUI. ELE PERSISTE ENTRE OS CICLOS.
             placarEl.textContent = `Montanhas: ${montanhas}`;
             console.log("Iniciando novo ciclo!");
         }
@@ -591,10 +590,9 @@
                 const ped = pedrasCaindo[i];
                 ped.y += ped.velocidade;
                 
-                // Aplica o filtro de pedra vermelha se o dark mode estiver ativo
                 ctx.save();
                 if (darkModeAtivo) {
-                    ctx.filter = 'brightness(1.5) hue-rotate(-40deg) saturate(3)'; // Filtro para vermelho mais intenso
+                    ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)'; // Filtro para vermelho mais intenso
                 } else {
                     ctx.filter = 'none';
                 }
@@ -682,10 +680,10 @@
         // --------------------------
         // fim do jogo suicídio: pede nome e tenta salvar
         // --------------------------
-        let caixaNomeElement = null; // Variável para controlar a exibição da caixa de nome
+        let caixaNomeElement = null; 
 
         function mostrarCaixaNome(scoreAtual) {
-            if (caixaNomeElement) return; // Já está visível, não faz nada
+            if (caixaNomeElement) return; 
 
             caixaNomeElement = document.createElement('div');
             caixaNomeElement.className = 'caixa-nome';
@@ -699,7 +697,7 @@
                 </div>
             `;
             document.body.appendChild(caixaNomeElement);
-            document.getElementById('nome-jogador').focus(); // Foca no input para digitação imediata
+            document.getElementById('nome-jogador').focus(); 
 
             document.getElementById('salvar-absurdo').addEventListener('click', async () => {
                 const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
@@ -740,7 +738,13 @@
             sliderRelativeX = 0.5;
             characterOffsetX = 0;
             updateSliderHandlePosition(sliderRelativeX);
-            mostrarCaixaNome(scoreAtual);
+            // Corrigido: A caixa só abre se o score for maior que 0
+            if (scoreAtual > 0) {
+                mostrarCaixaNome(scoreAtual);
+            } else {
+                // Se o score for 0, apenas reseta o jogo
+                resetarJogoAposGameOver();
+            }
         }
 
         // --------------------------
@@ -751,7 +755,6 @@
 
             ctx.save();
             if (darkModeAtivo) {
-                // Ajustado para ficar mais claro
                 ctx.filter = 'brightness(0.6) contrast(1.1) grayscale(0.2)'; 
             } else {
                 ctx.filter = 'none';
@@ -827,7 +830,6 @@
                 const py = q.y - pedH / 2;
                 ctx.save();
                 if (darkModeAtivo) {
-                    // Filtro para vermelho mais intenso para pedras em modo escuro
                     ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)';
                 }
                 ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
@@ -843,7 +845,6 @@
                     const pedY = sy - pedH * 0.7;
                     ctx.save();
                     if (darkModeAtivo) {
-                        // Filtro para vermelho mais intenso para pedras em modo escuro
                         ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)';
                     }
                     if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, pedX, pedY, pedW, pedH);
@@ -862,7 +863,6 @@
                     const px = q.x - pedW / 2; const py = q.y - pedH / 2;
                     ctx.save();
                     if (darkModeAtivo) {
-                        // Filtro para vermelho mais intenso para pedras em modo escuro
                         ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)';
                     }
                     ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
