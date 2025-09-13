@@ -518,7 +518,6 @@
             sliderHandle.classList.remove('active');
         }
 
-        // Event listeners fixos para o slider
         sliderContainer.addEventListener('touchstart', onSliderStart, { passive: false });
         sliderContainer.addEventListener('touchmove', onSliderMove, { passive: false });
         sliderContainer.addEventListener('touchend', onSliderEnd, { passive: false });
@@ -528,10 +527,6 @@
         document.addEventListener('mousemove', onSliderMove, { passive: false });
         document.addEventListener('mouseup', onSliderEnd);
         document.addEventListener('mouseleave', onSliderEnd);
-
-        // Remove os listeners globais que causavam o bug
-        // window.removeEventListener('touchstart', handleStartEvent);
-        // window.removeEventListener('mousedown', handleStartEvent);
 
 
         // --- movimento / física ---
@@ -595,7 +590,6 @@
                 const ped = pedrasCaindo[i];
                 ped.y += ped.velocidade;
                 
-                // Aplica o filtro de pedra vermelha se o dark mode estiver ativo
                 ctx.save();
                 if (darkModeAtivo) {
                     ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)'; // Filtro para vermelho mais intenso
@@ -703,7 +697,14 @@
                 </div>
             `;
             document.body.appendChild(caixaNomeElement);
-            document.getElementById('nome-jogador').focus();
+
+            // Adiciona o listener para focar e abrir o teclado apenas no input
+            const inputNome = document.getElementById('nome-jogador');
+            inputNome.addEventListener('click', () => {
+                inputNome.focus();
+            });
+            // Garante que o foco inicial também acione o teclado em alguns dispositivos
+            inputNome.focus();
 
             document.getElementById('salvar-absurdo').addEventListener('click', async () => {
                 const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
@@ -759,7 +760,6 @@
 
             ctx.save();
             if (darkModeAtivo) {
-                // Ajustado para ficar mais claro
                 ctx.filter = 'brightness(0.6) contrast(1.1) grayscale(0.2)'; 
             } else {
                 ctx.filter = 'none';
