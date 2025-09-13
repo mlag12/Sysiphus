@@ -406,23 +406,25 @@
       velQueda = 0;
       movimentoAtivo = true;
 
-      // dimensões do Sísifo
       const sisW = canvas.width * 0.12;
       const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-
-      // pega posição inicial do personagem na subida
       const pInicial = cubicBezierPoint(0, ...curvaSubida);
       const sx = pInicial.x - sisW / 2;
       const sy = pInicial.y - sisH;
 
-      // gera pedra inicial garantindo que não nasça sobre o personagem
+      // gera pedra inicial garantindo zona de exclusão
       gerarPedraCaindo(undefined, PEDRA_CAI_W, sx, sy, sisW, sisH);
     }
+
 
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo(posX, larguraPedra, xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
-      const margemSegura = wPersonagem * 1.5; // evita nascer perto do personagem
+      // Limita a quantidade de pedras
+      if (pedrasCaindo.length >= 3) return;
+
+      // Zona de exclusão aumentada
+      const margemSegura = wPersonagem * 3; // aumentei para 3x a largura do personagem
       let x;
 
       if (posX !== undefined) {
