@@ -402,45 +402,51 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo() {
-      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // posição horizontal aleatória
-      const y = -PEDRA_CAI_H; // sempre acima da tela
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // horizontal aleatório
+      const y = -PEDRA_CAI_H; // acima da tela
       const velocidade = 2 + Math.random() * 3; // velocidade aleatória
       pedrasCaindo.push({ x, y, velocidade });
     }
 
 
+
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
         const ped = pedrasCaindo[i];
+
+        // Atualiza posição da pedra
         ped.y += ped.velocidade;
 
-        // desenhar pedra
-        if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
+        // Desenhar pedra
+        if (IMG_PEDRA.complete) {
+          ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
+        }
 
-        // checar colisão com personagem ou pedra dele
+        // Checar colisão com o personagem
         if (
           ped.x < xPersonagem + wPersonagem &&
           ped.x + PEDRA_CAI_W > xPersonagem &&
           ped.y < yPersonagem + hPersonagem &&
           ped.y + PEDRA_CAI_H > yPersonagem
         ) {
-          // colisão detectada
-          pedrasCaindo.splice(i, 1); // remove pedra
+          // Colisão detectada: remove pedra e reinicia jogo
+          pedrasCaindo.splice(i, 1);
 
-          // fim de jogo: tenta salvar se pontuação suficiente
-          if (montanhas > 0) {
-            fimDoJogoSuicidio(); // usa a função já existente que pede nome e tenta salvar
-          }
+          // Fim de jogo: chama função existente
+          fimDoJogoSuicidio();
 
-          // reinicia score
+          // Reseta score e progresso
           montanhas = 0;
           progressoSubida = progressoQueda = 0;
           velSubida = velQueda = 0;
+
           return; // sai da função para não processar mais pedras neste frame
         }
 
-        // remover se saiu da tela
-        if (ped.y > canvas.height) pedrasCaindo.splice(i, 1);
+        // Remove pedra se saiu da tela
+        if (ped.y > canvas.height) {
+          pedrasCaindo.splice(i, 1);
+        }
       }
     }
 
