@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sísifo na Montanha — Versão Mobile com Slider</title>
+    <title>Sísifo na Montanha — Versão Mobile com Slider Aprimorado</title>
     <style>
         :root {
             --btn-bg: linear-gradient(135deg, #ff004d, #ffb347);
@@ -66,8 +66,8 @@
             transform: translateX(-50%);
             z-index: 120;
             pointer-events: auto;
-            width: 80%; /* Largura do slider */
-            max-width: 500px; /* Largura máxima em telas grandes */
+            width: 60%; /* Largura do slider diminuída para 60% */
+            max-width: 400px; /* Largura máxima em telas grandes também diminuída */
             height: 60px; /* Altura da área do slider */
             background: var(--slider-track-bg);
             border-radius: 30px;
@@ -357,7 +357,10 @@
         const pedrasCaindo = [];
         const PEDRA_CAI_W = 40; // largura padrão
         const PEDRA_CAI_H = 40; // altura padrão
-        const freqQueda = 0.01; // chance de gerar pedra a cada frame (0-1)
+        const NUM_PEDRAS_POR_GERACAO = 4; // Aumentado para 4 pedras por vez
+        const VELOCIDADE_PEDRA_MIN = 4; // Aumentada velocidade mínima
+        const VELOCIDADE_PEDRA_MAX = 7; // Aumentada velocidade máxima
+        const FREQUENCIA_GERACAO_PEDRA = 0.02; // Chance de gerar um grupo de pedras a cada frame (aumentado)
 
         // --- resize canvas & curves ---
         const curvaSubidaPct = [{ x: 0.15, y: 0.65 }, { x: 0.25, y: 0.40 }, { x: 0.40, y: 0.40 }, { x: 0.60, y: 0.40 }];
@@ -392,22 +395,26 @@
             const handleX = minHandleX + (maxHandleX - minHandleX) * relativeX;
             sliderHandle.style.left = `${handleX - handleWidth / 2}px`;
 
-            const maxCharacterOffset = canvas.width * 0.2; // O personagem pode se mover 20% da largura da tela para cada lado
+            const maxCharacterOffset = sliderWidth * 0.4; // Ajusta o deslocamento máximo para a largura do slider
             characterOffsetX = (sliderRelativeX - 0.5) * 2 * maxCharacterOffset;
         }
 
         function onSliderStart(event) {
+            // Permite arrastar o slider apenas se o jogo estiver ativo (SUBINDO)
+            // Ou se estiver PARADO, para iniciar uma nova partida
+            if (estado !== ESTADOS.SUBINDO && estado !== ESTADOS.PARADO) return;
+
             event.preventDefault();
             isSliderDragging = true;
             sliderHandle.classList.add('active');
-            // Inicia o ciclo do jogo ao interagir com o slider pela primeira vez
+            
             if (estado === ESTADOS.PARADO) {
                 iniciarCiclo();
             }
         }
 
         function onSliderMove(event) {
-            if (!isSliderDragging) return;
+            if (!isSliderDragging || estado !== ESTADOS.SUBINDO) return; // Move apenas se estiver arrastando E subindo
             event.preventDefault();
             const pos = getTouchPosition(event);
             const sliderWidth = sliderContainer.clientWidth;
@@ -430,10 +437,11 @@
         sliderContainer.addEventListener('touchend', onSliderEnd, { passive: false });
         sliderContainer.addEventListener('touchcancel', onSliderEnd, { passive: false });
 
-        // Adiciona listeners para desktop também, caso necessário
+        // Adiciona listeners para desktop também
         sliderContainer.addEventListener('mousedown', onSliderStart, { passive: false });
         document.addEventListener('mousemove', onSliderMove, { passive: false }); // Usar document para capturar movimento fora do container
         document.addEventListener('mouseup', onSliderEnd);
+        document.addEventListener('mouseleave', onSliderEnd); // Finaliza o drag se o mouse sair da janela
 
         // --- movimento / física ---
         function cubicBezierPoint(t, p0, p1, p2, p3) {
@@ -444,50 +452,55 @@
         }
 
         let progressoSubida = 0, velSubida = 0;
-        let maxVelSubida = 0.01, aceleracaoSubida = 0.0005; // Ajustada aceleração para ser mais sutil
+        let maxVelSubida = 0.01, aceleracaoSubida = 0.0005;
         let progressoQueda = 0, velQueda = 0;
         let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
 
         function iniciarCiclo() {
             estado = ESTADOS.SUBINDO;
-            // --- Reset de variáveis para iniciar novo ciclo ---
             progressoSubida = 0;
-            velSubida = 0.005; // Velocidade inicial ao começar
+            velSubida = 0.005;
             progressoQueda = 0;
             velQueda = 0;
-            pedrasCaindo.length = 0; // Limpa pedras ao iniciar novo ciclo
-            sliderRelativeX = 0.5; // Reseta slider para o centro
+            pedrasCaindo.length = 0;
+            sliderRelativeX = 0.5;
             characterOffsetX = 0;
-            updateSliderHandlePosition(sliderRelativeX); // Atualiza a posição visual do handle
+            updateSliderHandlePosition(sliderRelativeX);
+            montanhas = 0; // Reseta as montanhas ao iniciar um novo ciclo
+            placarEl.textContent = `Montanhas: ${montanhas}`; // Atualiza o placar
             console.log("Iniciando novo ciclo!");
         }
 
         function reiniciarParaParado() {
             montanhas++;
             estado = ESTADOS.PARADO;
-            // --- Reset de variáveis para estado parado ---
             progressoSubida = 0;
             progressoQueda = 0;
             velSubida = 0;
             velQueda = 0;
-            pedrasCaindo.length = 0; // Limpa pedras
-            sliderRelativeX = 0.5; // Reseta slider para o centro
+            pedrasCaindo.length = 0;
+            sliderRelativeX = 0.5;
             characterOffsetX = 0;
-            updateSliderHandlePosition(sliderRelativeX); // Atualiza a posição visual do handle
+            updateSliderHandlePosition(sliderRelativeX);
+            placarEl.textContent = `Montanhas: ${montanhas}`;
             console.log(`Ciclo concluído. Montanhas: ${montanhas}`);
         }
 
         function gerarPedraCaindo(xPersonagem, wPersonagem) {
-            let x;
-            const zonaExclusao = canvas.width * 0.2; // Zona segura ao redor do personagem
+            // Gera um grupo de NUM_PEDRAS_POR_GERACAO pedras
+            for (let i = 0; i < NUM_PEDRAS_POR_GERACAO; i++) {
+                let x;
+                const zonaExclusao = canvas.width * 0.2; // Zona segura ao redor do personagem
 
-            do {
-                x = Math.random() * (canvas.width - PEDRA_CAI_W);
-            } while (Math.abs(x - (xPersonagem + wPersonagem / 2)) < zonaExclusao);
+                // Garante que as pedras não caiam muito perto do personagem (opcional, mas bom para jogabilidade)
+                do {
+                    x = Math.random() * (canvas.width - PEDRA_CAI_W);
+                } while (Math.abs(x - (xPersonagem + wPersonagem / 2)) < zonaExclusao);
 
-            const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
-            const velocidade = 2 + Math.random() * 3;
-            pedrasCaindo.push({ x, y, velocidade });
+                const y = -PEDRA_CAI_H - (i * PEDRA_CAI_H * 0.5); // Escalona o início verticalmente para cada pedra do grupo
+                const velocidade = VELOCIDADE_PEDRA_MIN + Math.random() * (VELOCIDADE_PEDRA_MAX - VELOCIDADE_PEDRA_MIN); // Velocidade aleatória no novo range
+                pedrasCaindo.push({ x, y, velocidade });
+            }
         }
 
         function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
@@ -588,10 +601,9 @@
             estado = ESTADOS.PARADO;
             isSliderDragging = false;
             sliderHandle.classList.remove('active');
-            // --- Reset de variáveis do slider e do jogo após a morte ---
-            sliderRelativeX = 0.5; // Reseta slider para o centro
+            sliderRelativeX = 0.5;
             characterOffsetX = 0;
-            updateSliderHandlePosition(sliderRelativeX); // Atualiza a posição visual do handle
+            updateSliderHandlePosition(sliderRelativeX);
 
             const caixaNome = document.createElement('div');
             caixaNome.className = 'caixa-nome';
@@ -610,20 +622,24 @@
                 const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
                 await salvarScoreSeTop10(nome, scoreAtual);
                 document.body.removeChild(caixaNome);
-                // --- Reset final do jogo após salvar/cancelar ---
-                montanhas = 0;
-                progressoSubida = progressoQueda = 0;
-                velSubida = velQueda = 0;
+                montanhas = 0; // Reinicia a contagem de montanhas para uma nova partida
+                progressoSubida = 0; // Zera o progresso da subida
+                progressoQueda = 0; // Zera o progresso da queda
+                velSubida = 0; // Zera a velocidade de subida
+                velQueda = 0; // Zera a velocidade de queda
+                pedrasCaindo.length = 0; // Limpa pedras
                 placarEl.textContent = `Montanhas: ${montanhas}`;
                 atualizarRanking();
             });
 
             document.getElementById('cancelar-absurdo').addEventListener('click', () => {
                 document.body.removeChild(caixaNome);
-                // --- Reset final do jogo após salvar/cancelar ---
-                montanhas = 0;
-                progressoSubida = progressoQueda = 0;
-                velSubida = velQueda = 0;
+                montanhas = 0; // Reinicia a contagem de montanhas para uma nova partida
+                progressoSubida = 0; // Zera o progresso da subida
+                progressoQueda = 0; // Zera o progresso da queda
+                velSubida = 0; // Zera a velocidade de subida
+                velQueda = 0; // Zera a velocidade de queda
+                pedrasCaindo.length = 0; // Limpa pedras
                 placarEl.textContent = `Montanhas: ${montanhas}`;
                 atualizarRanking();
             });
@@ -655,16 +671,16 @@
             // lógica de estados
             if (estado === ESTADOS.SUBINDO) {
                 velSubida += aceleracaoSubida;
-                velSubida = clamp(velSubida, 0, maxVelSubida); // Garante que a velocidade não passe do máximo
+                velSubida = clamp(velSubida, 0, maxVelSubida);
 
                 progressoSubida += velSubida;
-                progressoSubida = clamp(progressoSubida, 0, 1); // Garante que o progresso não saia de 0 a 1
+                progressoSubida = clamp(progressoSubida, 0, 1);
 
                 if (progressoSubida >= 1) {
                     estado = ESTADOS.PAUSA;
-                    pausaFrames = 15; // Mantém a pausa por 15 frames
+                    pausaFrames = 15;
                     progressoQueda = 0;
-                    velQueda = aceleracaoQuedaInit; // Inicia a velocidade de queda
+                    velQueda = aceleracaoQuedaInit;
                 }
             } else if (estado === ESTADOS.PAUSA) {
                 pausaFrames--;
@@ -672,40 +688,36 @@
             } else if (estado === ESTADOS.QUEDA) {
                 velQueda += gravidadeQueda;
                 progressoQueda += velQueda;
-                progressoQueda = clamp(progressoQueda, 0, 1); // Garante que o progresso não saia de 0 a 1
+                progressoQueda = clamp(progressoQueda, 0, 1);
                 if (progressoQueda >= 1) {
                     reiniciarParaParado();
                 }
-            } else if (estado === ESTADOS.SUICIDIO) { // Estado para quando o personagem morre caindo
+            } else if (estado === ESTADOS.SUICIDIO) {
                 velQueda += gravidadeQueda;
                 progressoQueda += velQueda;
                 progressoQueda = clamp(progressoQueda, 0, 1);
                 if (progressoQueda >= 1) {
-                    estado = ESTADOS.PARADO;
-                    fimDoJogoSuicidio(); // Chama a função que mostra o modal de nome
+                    estado = ESTADOS.PARADO; // Volta para parado, mas chamará o fimDoJogoSuicidio
+                    fimDoJogoSuicidio(); // Chama o modal para inserir o nome
                 }
             }
 
-            // Limpa o canvas
+            // limpar
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             desenharFundo();
 
-            // Calcula posições baseadas nas curvas Bezier e no estado atual
+            // calcular posições via bezier
             const pSisBase = cubicBezierPoint(progressoSubida, ...curvaSubida);
             const pQueda = cubicBezierPoint(progressoQueda, ...curvaQueda);
 
-            // Dimensões relativas dos elementos
-            const sisW = canvas.width * 0.12;
-            const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-            const pedW = sisW * 0.7;
-            const pedH = pedW;
+            // dimensões relativas
+            const sisW = canvas.width * 0.12; const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
+            const pedW = sisW * 0.7; const pedH = pedW;
 
             if (estado === ESTADOS.SUICIDIO) {
-                // Lógica para a animação de queda livre do Sísifo
                 const q = pQueda;
                 const sisDesvio = Math.sin(progressoQueda * Math.PI * 0.5) * (canvas.width * 0.04);
-                const sx = q.x - sisW / 2 + sisDesvio; // Posição X ajustada com desvio
-                const sy = q.y - sisH / 2; // Posição Y baseada na curva de queda
+                const sx = q.x - sisW / 2 + sisDesvio; const sy = q.y - sisH / 2;
                 if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
                 const px = q.x - pedW / 2 + Math.cos(progressoQueda * Math.PI * 1.5) * (canvas.width * 0.035);
@@ -713,31 +725,28 @@
                 ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
 
             } else {
-                // Lógica para Sísifo subindo, em pausa ou caindo "normalmente"
+                // subida/pause/queda regular
                 const s = pSisBase;
-                // Aplica o deslocamento horizontal do slider (characterOffsetX) à posição base
+                // Aplica o deslocamento horizontal do slider
                 const sx = s.x - sisW / 2 + characterOffsetX;
-                const sy = s.y - sisH + (canvas.height * 0.01); // Ajuste fino da posição Y
+                const sy = s.y - sisH + (canvas.height * 0.01);
                 if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
-                // Desenha a pedra que o Sísifo está carregando
                 if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
                     const pedX = sx + sisW * 0.4; // Posição da pedra em relação ao Sísifo
                     const pedY = sy - pedH * 0.7;
                     if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, pedX, pedY, pedW, pedH);
                 }
 
-                // Lógica específica para o estado de SUBINDO: geração e atualização de pedras caindo
                 if (estado === ESTADOS.SUBINDO) {
-                    // Gera pedras caindo com baixa frequência
-                    if (Math.random() < freqQueda) {
-                        gerarPedraCaindo(sx, sisW); // Passa a posição e largura do Sísifo
+                    // Garante que pedras sempre caiam
+                    if (Math.random() < FREQUENCIA_GERACAO_PEDRA) {
+                        gerarPedraCaindo(sx, sisW);
                     }
-                    // Atualiza a posição e verifica colisão das pedras caindo com o Sísifo
                     atualizarPedrasCaindo(sx, sy, sisW, sisH);
                 }
 
-                // Desenha a pedra que está caindo livremente (estado QUEDA)
+                // Desenha a pedra caindo livremente (estado QUEDA)
                 if (estado === ESTADOS.QUEDA) {
                     const q = pQueda;
                     const px = q.x - pedW / 2; const py = q.y - pedH / 2;
@@ -745,45 +754,46 @@
                 }
             }
 
-            // Atualiza o placar
+            // placar
             if (mostrarScore) placarEl.textContent = '';
             else placarEl.textContent = `Montanhas: ${montanhas}`;
 
-            // Solicita o próximo frame de animação
             requestAnimationFrame(loop);
         }
 
-        // Inicia o loop principal do jogo
+        // start loop
         requestAnimationFrame(loop);
 
-        // Inicializa o ranking ao carregar a página
+        // inicializa ranking no carregamento
         atualizarRanking();
 
-        // Funções de debug (opcional)
+        // expose algumas funções para debug via console (opcional)
         window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
 
         // --------------------------
-        // Helpers / Utilitários
+        // helpers / utilitários pequenos
         // --------------------------
         function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
         function safeNumber(v, fallback = 0) { const n = Number(v); return Number.isNaN(n) ? fallback : n; }
 
         // --------------------------
-        // Iniciação do jogo com o primeiro toque
+        // pequenas melhorias de usabilidade: iniciar com toque na tela (mobile)
         // --------------------------
         let tapped = false;
         function handleStartEvent() {
             if (!tapped) {
                 tapped = true;
-                // Aqui você pode adicionar lógica para iniciar áudio, por exemplo.
+                // Pode ser usado para iniciar áudio ou desbloquear interações
             }
-            // Garante que o jogo inicie ao tocar no slider, mesmo se o estado for PARADO
+            // Inicia o ciclo do jogo se estiver parado e houver interação
             if (estado === ESTADOS.PARADO) {
                  iniciarCiclo();
             }
         }
+        // Adiciona listener a todo o corpo para qualquer toque iniciar o jogo/áudio
         window.addEventListener('touchstart', handleStartEvent, { passive: true });
         window.addEventListener('mousedown', handleStartEvent, { passive: true }); // Para desktop
+
     </script>
 </body>
 </html>
