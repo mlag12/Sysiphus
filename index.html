@@ -420,23 +420,23 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo(posX, larguraPedra, xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
-      // Limita a quantidade de pedras
       if (pedrasCaindo.length >= 3) return;
 
-      // Zona de exclusão aumentada
-      const margemSegura = wPersonagem * 3; // aumentei para 3x a largura do personagem
-      let x;
+      const raioExclusao = Math.max(wPersonagem, hPersonagem) * 2; // raio do círculo de exclusão
+      const cxPersonagem = xPersonagem + wPersonagem / 2;
+      const cyPersonagem = yPersonagem + hPersonagem / 2;
 
-      if (posX !== undefined) {
-        x = posX;
-      } else {
-        // sorteia até ficar fora da área do personagem
-        do {
-          x = Math.random() * (canvas.width - PEDRA_CAI_W);
-        } while (x > xPersonagem - margemSegura && x < xPersonagem + wPersonagem + margemSegura);
-      }
+      let x, y;
+      do {
+        x = Math.random() * (canvas.width - PEDRA_CAI_W);
+        y = -PEDRA_CAI_H; // topo da tela
+        const cxPedra = x + (larguraPedra || PEDRA_CAI_W) / 2;
+        const cyPedra = y + (larguraPedra || PEDRA_CAI_H) / 2;
+        const dx = cxPedra - cxPersonagem;
+        const dy = cyPedra - cyPersonagem;
+        var distancia = Math.sqrt(dx * dx + dy * dy);
+      } while (distancia < raioExclusao);
 
-      const y = -PEDRA_CAI_H; // sempre acima do topo
       const velocidade = 2 + Math.random() * 3;
 
       pedrasCaindo.push({
@@ -447,11 +447,6 @@
         height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H
       });
     }
-
-
-
-
-
 
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
