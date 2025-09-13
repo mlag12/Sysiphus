@@ -169,8 +169,8 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(2deg);
-      padding: 5vh 12vw;
-      /* aumenta horizontalmente */
+      padding: 5vh 8vw;
+      /* diminui o padding horizontal para mais espaço interno */
       background: rgba(0, 0, 0, 0.95);
       border: 4px dashed red;
       color: white;
@@ -180,9 +180,14 @@
       z-index: 1000;
       max-height: 70vh;
       overflow-y: auto;
-      min-width: 300px;
-      /* largura mínima para não quebrar */
+      min-width: 400px;
+      /* aumenta a largura mínima */
+      width: auto;
+      /* deixa a largura se ajustar ao conteúdo */
+      white-space: nowrap;
+      /* impede quebras de linha */
     }
+
 
     #ranking-absurdo h1 {
       font-family: Impact, fantasy;
