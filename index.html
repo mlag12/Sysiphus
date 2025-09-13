@@ -13,6 +13,74 @@
             --slider-track-bg: rgba(255, 255, 255, 0.2);
             --slider-handle-bg: #ff004d;
             --slider-handle-active-bg: #ffb347;
+            --background-filter: none; /* Default filter for background */
+            --sisifo-rock-filter: none; /* Default filter for Sisifo's rock */
+        }
+
+        body.dark-mode {
+            background: #1a1a1a; /* Darker background */
+            color: #e0e0e0; /* Lighter text color */
+        }
+
+        body.dark-mode #placar {
+            color: #f0f0f0;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        body.dark-mode #slider-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        body.dark-mode #slider-handle {
+            background: #8e0030;
+        }
+
+        body.dark-mode #slider-handle.active {
+            background: #b33d00;
+        }
+
+        body.dark-mode #menu-itens button,
+        body.dark-mode #menu-itens label,
+        body.dark-mode #botao-menu {
+            background: linear-gradient(135deg, #4d001e, #663300);
+            border-color: #333;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #ranking-absurdo {
+            background: rgba(20, 20, 20, 0.95);
+            border: 4px dashed #440011; /* Darker red border */
+            box-shadow: 0 0 20px rgba(100,0,30,0.5);
+        }
+
+        body.dark-mode #ranking-absurdo h1 {
+            color: #cc0033; /* Darker accent red */
+            text-shadow: 2px 2px 6px rgba(100, 0, 30, 0.5);
+            border-bottom-color: #663300;
+        }
+
+        body.dark-mode #ranking-list li {
+            color: #008888;
+            text-shadow: 1px 1px 3px rgba(0, 50, 50, 0.4);
+        }
+
+        body.dark-mode .caixa-nome {
+            background: linear-gradient(45deg, #550055, #005555);
+            border-color: #666600;
+            box-shadow: 0 0 20px rgba(0, 80, 80, 0.5);
+        }
+
+        body.dark-mode .caixa-nome input {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #e0e0e0;
+            border-color: #555;
+        }
+
+        body.dark-mode .caixa-nome button {
+            background: linear-gradient(135deg, #4d001e, #663300);
+            border-color: #333;
+            color: #e0e0e0;
         }
 
         /* reset mínimo */
@@ -28,6 +96,7 @@
             color: #fff;
             font-family: "Courier New", monospace;
             overflow: hidden; /* Evita barras de rolagem */
+            transition: background-color 0.3s ease; /* Smooth transition for dark mode */
         }
 
         /* canvas full screen */
@@ -262,6 +331,7 @@
             <div id="menu-itens">
                 <button id="botao-ranking">Ranking</button>
                 <label><input type="checkbox" id="mostrar-score"> Mostrar Score</label>
+                <label><input type="checkbox" id="dark-mode-toggle"> Modo Escuro</label>
             </div>
         </div>
 
@@ -320,7 +390,9 @@
         const botaoRanking = document.getElementById('botao-ranking');
         const rankingBox = document.getElementById('ranking-absurdo');
         const rankingList = document.getElementById('ranking-list');
-        const checkbox = document.getElementById('mostrar-score');
+        const checkboxMostrarScore = document.getElementById('mostrar-score');
+        const checkboxDarkMode = document.getElementById('dark-mode-toggle');
+
 
         // --------------------------
         // Imagens (coloque na pasta images)
@@ -336,14 +408,30 @@
         let estado = ESTADOS.PARADO;
         let montanhas = 0;
         let mostrarScore = false;
+        let darkModeAtivo = false;
 
         // Estado do Slider
         let isSliderDragging = false;
         let sliderRelativeX = 0.5; // Posição horizontal do slider (0 a 1)
         let characterOffsetX = 0; // Deslocamento horizontal do personagem
 
-        checkbox.addEventListener('change', () => { mostrarScore = checkbox.checked; });
+        checkboxMostrarScore.addEventListener('change', () => { mostrarScore = checkboxMostrarScore.checked; });
         botaoMenu.addEventListener('click', () => menuContainer.classList.toggle('open'));
+
+        checkboxDarkMode.addEventListener('change', () => {
+            darkModeAtivo = checkboxDarkMode.checked;
+            document.body.classList.toggle('dark-mode', darkModeAtivo);
+            // Salvar preferência no localStorage
+            localStorage.setItem('darkModePreference', darkModeAtivo);
+        });
+
+        // Carregar preferência de Dark Mode ao iniciar
+        const savedDarkMode = localStorage.getItem('darkModePreference');
+        if (savedDarkMode !== null) {
+            darkModeAtivo = JSON.parse(savedDarkMode);
+            checkboxDarkMode.checked = darkModeAtivo;
+            document.body.classList.toggle('dark-mode', darkModeAtivo);
+        }
 
         botaoRanking.addEventListener('click', () => {
             const isShown = rankingBox.style.display === 'block';
@@ -357,10 +445,11 @@
         const pedrasCaindo = [];
         const PEDRA_CAI_W = 40; // largura padrão
         const PEDRA_CAI_H = 40; // altura padrão
-        const NUM_PEDRAS_POR_GERACAO = 6; // Aumentado para 6 pedras por vez
-        const VELOCIDADE_PEDRA_MIN = 6; // Aumentada velocidade mínima
-        const VELOCIDADE_PEDRA_MAX = 10; // Aumentada velocidade máxima
-        const FREQUENCIA_GERACAO_PEDRA = 0.025; // Chance de gerar um grupo de pedras a cada frame (aumentado para garantir a queda)
+        const NUM_PEDRAS_POR_GERACAO = 6;
+        // Velocidades revertidas para o estado anterior, como solicitado.
+        const VELOCIDADE_PEDRA_MIN = 6; 
+        const VELOCIDADE_PEDRA_MAX = 10;
+        const FREQUENCIA_GERACAO_PEDRA = 0.025; 
 
         // --- resize canvas & curves ---
         const curvaSubidaPct = [{ x: 0.15, y: 0.65 }, { x: 0.25, y: 0.40 }, { x: 0.40, y: 0.40 }, { x: 0.60, y: 0.40 }];
@@ -400,8 +489,6 @@
         }
 
         function onSliderStart(event) {
-            // Permite arrastar o slider apenas se o jogo estiver ativo (SUBINDO)
-            // Ou se estiver PARADO, para iniciar uma nova partida
             if (estado !== ESTADOS.SUBINDO && estado !== ESTADOS.PARADO) return;
 
             event.preventDefault();
@@ -414,7 +501,7 @@
         }
 
         function onSliderMove(event) {
-            if (!isSliderDragging || estado !== ESTADOS.SUBINDO) return; // Move apenas se estiver arrastando E subindo
+            if (!isSliderDragging || estado !== ESTADOS.SUBINDO) return; 
             event.preventDefault();
             const pos = getTouchPosition(event);
             const sliderWidth = sliderContainer.clientWidth;
@@ -437,11 +524,10 @@
         sliderContainer.addEventListener('touchend', onSliderEnd, { passive: false });
         sliderContainer.addEventListener('touchcancel', onSliderEnd, { passive: false });
 
-        // Adiciona listeners para desktop também
         sliderContainer.addEventListener('mousedown', onSliderStart, { passive: false });
-        document.addEventListener('mousemove', onSliderMove, { passive: false }); // Usar document para capturar movimento fora do container
+        document.addEventListener('mousemove', onSliderMove, { passive: false });
         document.addEventListener('mouseup', onSliderEnd);
-        document.addEventListener('mouseleave', onSliderEnd); // Finaliza o drag se o mouse sair da janela
+        document.addEventListener('mouseleave', onSliderEnd);
 
         // --- movimento / física ---
         function cubicBezierPoint(t, p0, p1, p2, p3) {
@@ -466,7 +552,7 @@
             sliderRelativeX = 0.5;
             characterOffsetX = 0;
             updateSliderHandlePosition(sliderRelativeX);
-            // NÃO ZERA MAIS O CONTADOR DE MONTAINHAS AQUI
+            // O CONTADOR DE MONTAINHAS NÃO É MAIS ZERADO AQUI. ELE PERSISTE ENTRE OS CICLOS.
             placarEl.textContent = `Montanhas: ${montanhas}`;
             console.log("Iniciando novo ciclo!");
         }
@@ -504,9 +590,18 @@
             for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
                 const ped = pedrasCaindo[i];
                 ped.y += ped.velocidade;
+                
+                // Aplica o filtro de pedra vermelha se o dark mode estiver ativo
+                ctx.save();
+                if (darkModeAtivo) {
+                    ctx.filter = 'brightness(1.5) hue-rotate(-40deg) saturate(3)'; // Filtro para vermelho mais intenso
+                } else {
+                    ctx.filter = 'none';
+                }
                 if (IMG_PEDRA.complete) {
                     ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
                 }
+                ctx.restore();
 
                 if (
                     ped.x < xPersonagem + wPersonagem &&
@@ -587,19 +682,14 @@
         // --------------------------
         // fim do jogo suicídio: pede nome e tenta salvar
         // --------------------------
-        async function fimDoJogoSuicidio() {
-            const scoreAtual = montanhas;
+        let caixaNomeElement = null; // Variável para controlar a exibição da caixa de nome
 
-            estado = ESTADOS.PARADO;
-            isSliderDragging = false;
-            sliderHandle.classList.remove('active');
-            sliderRelativeX = 0.5;
-            characterOffsetX = 0;
-            updateSliderHandlePosition(sliderRelativeX);
+        function mostrarCaixaNome(scoreAtual) {
+            if (caixaNomeElement) return; // Já está visível, não faz nada
 
-            const caixaNome = document.createElement('div');
-            caixaNome.className = 'caixa-nome';
-            caixaNome.innerHTML = `
+            caixaNomeElement = document.createElement('div');
+            caixaNomeElement.className = 'caixa-nome';
+            caixaNomeElement.innerHTML = `
                 <p>Você atingiu <strong>${scoreAtual}</strong> montanhas!</p>
                 <p>Insira seu nome para o ranking:</p>
                 <input type="text" id="nome-jogador" placeholder="Seu nome..." />
@@ -608,33 +698,49 @@
                     <button id="cancelar-absurdo" style="margin-left:10px;">Cancelar</button>
                 </div>
             `;
-            document.body.appendChild(caixaNome);
+            document.body.appendChild(caixaNomeElement);
+            document.getElementById('nome-jogador').focus(); // Foca no input para digitação imediata
 
             document.getElementById('salvar-absurdo').addEventListener('click', async () => {
                 const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
                 await salvarScoreSeTop10(nome, scoreAtual);
-                document.body.removeChild(caixaNome);
-                montanhas = 0; // REINICIA AQUI (após o FIM de jogo)
-                progressoSubida = 0;
-                progressoQueda = 0;
-                velSubida = 0;
-                velQueda = 0;
-                pedrasCaindo.length = 0;
-                placarEl.textContent = `Montanhas: ${montanhas}`;
-                atualizarRanking();
+                esconderCaixaNome();
+                resetarJogoAposGameOver();
             });
 
             document.getElementById('cancelar-absurdo').addEventListener('click', () => {
-                document.body.removeChild(caixaNome);
-                montanhas = 0; // REINICIA AQUI (após o FIM de jogo)
-                progressoSubida = 0;
-                progressoQueda = 0;
-                velSubida = 0;
-                velQueda = 0;
-                pedrasCaindo.length = 0;
-                placarEl.textContent = `Montanhas: ${montanhas}`;
-                atualizarRanking();
+                esconderCaixaNome();
+                resetarJogoAposGameOver();
             });
+        }
+
+        function esconderCaixaNome() {
+            if (caixaNomeElement && caixaNomeElement.parentNode) {
+                caixaNomeElement.parentNode.removeChild(caixaNomeElement);
+                caixaNomeElement = null;
+            }
+        }
+
+        function resetarJogoAposGameOver() {
+            montanhas = 0; // O contador é zerado apenas QUANDO O JOGO TERMINA
+            progressoSubida = 0;
+            progressoQueda = 0;
+            velSubida = 0;
+            velQueda = 0;
+            pedrasCaindo.length = 0;
+            placarEl.textContent = `Montanhas: ${montanhas}`;
+            atualizarRanking();
+        }
+
+        async function fimDoJogoSuicidio() {
+            const scoreAtual = montanhas;
+            estado = ESTADOS.PARADO;
+            isSliderDragging = false;
+            sliderHandle.classList.remove('active');
+            sliderRelativeX = 0.5;
+            characterOffsetX = 0;
+            updateSliderHandlePosition(sliderRelativeX);
+            mostrarCaixaNome(scoreAtual);
         }
 
         // --------------------------
@@ -642,6 +748,14 @@
         // --------------------------
         function desenharFundo() {
             if (!IMG_BG.complete) return;
+
+            ctx.save();
+            if (darkModeAtivo) {
+                // Ajustado para ficar mais claro
+                ctx.filter = 'brightness(0.6) contrast(1.1) grayscale(0.2)'; 
+            } else {
+                ctx.filter = 'none';
+            }
 
             const scaleX = canvas.width / IMG_BG.width;
             const scaleY = canvas.height / IMG_BG.height;
@@ -654,13 +768,13 @@
             const offsetY = (canvas.height - h) / 2;
 
             ctx.drawImage(IMG_BG, offsetX, offsetY, w, h);
+            ctx.restore();
         }
 
         // --------------------------
         // loop principal e renderização detalhada
         // --------------------------
         function loop() {
-            // lógica de estados
             if (estado === ESTADOS.SUBINDO) {
                 velSubida += aceleracaoSubida;
                 velSubida = clamp(velSubida, 0, maxVelSubida);
@@ -694,15 +808,12 @@
                 }
             }
 
-            // limpar
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             desenharFundo();
 
-            // calcular posições via bezier
             const pSisBase = cubicBezierPoint(progressoSubida, ...curvaSubida);
             const pQueda = cubicBezierPoint(progressoQueda, ...curvaQueda);
 
-            // dimensões relativas
             const sisW = canvas.width * 0.12; const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
             const pedW = sisW * 0.7; const pedH = pedW;
 
@@ -714,10 +825,14 @@
 
                 const px = q.x - pedW / 2 + Math.cos(progressoQueda * Math.PI * 1.5) * (canvas.width * 0.035);
                 const py = q.y - pedH / 2;
-                ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
+                ctx.save();
+                if (darkModeAtivo) {
+                    // Filtro para vermelho mais intenso para pedras em modo escuro
+                    ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)';
+                }
+                ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
 
             } else {
-                // subida/pause/queda regular
                 const s = pSisBase;
                 const sx = s.x - sisW / 2 + characterOffsetX;
                 const sy = s.y - sisH + (canvas.height * 0.01);
@@ -726,7 +841,13 @@
                 if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
                     const pedX = sx + sisW * 0.4;
                     const pedY = sy - pedH * 0.7;
+                    ctx.save();
+                    if (darkModeAtivo) {
+                        // Filtro para vermelho mais intenso para pedras em modo escuro
+                        ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)';
+                    }
                     if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, pedX, pedY, pedW, pedH);
+                    ctx.restore();
                 }
 
                 if (estado === ESTADOS.SUBINDO) {
@@ -739,11 +860,15 @@
                 if (estado === ESTADOS.QUEDA) {
                     const q = pQueda;
                     const px = q.x - pedW / 2; const py = q.y - pedH / 2;
-                    ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
+                    ctx.save();
+                    if (darkModeAtivo) {
+                        // Filtro para vermelho mais intenso para pedras em modo escuro
+                        ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)';
+                    }
+                    ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
                 }
             }
 
-            // placar
             if (mostrarScore) placarEl.textContent = '';
             else placarEl.textContent = `Montanhas: ${montanhas}`;
 
