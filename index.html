@@ -404,7 +404,7 @@
     function gerarPedraCaindo() {
       // limite horizontal: apenas na área da subida
       const inicioX = canvas.width * 0.1;   // 10% da tela
-      const fimX = canvas.width * 0.5;   // até metade da tela (ajuste como preferir)
+      const fimX = canvas.width * 0.8;   // até metade da tela (ajuste como preferir)
 
       const x = inicioX + Math.random() * (fimX - inicioX - PEDRA_CAI_W);
       const y = -PEDRA_CAI_H; // sempre acima da tela
