@@ -402,11 +402,12 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo() {
-      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // horizontal aleatório
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // posição horizontal aleatória
       const y = -PEDRA_CAI_H; // acima da tela
       const velocidade = 2 + Math.random() * 3; // velocidade aleatória
       pedrasCaindo.push({ x, y, velocidade });
     }
+
 
 
 
