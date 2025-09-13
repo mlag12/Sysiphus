@@ -55,55 +55,40 @@
       white-space: nowrap;
     }
 
-   #botao-container {
-  position: fixed;
-  bottom: 3%;        /* mantém onde estava antes */
-  left: 50%;          /* centraliza horizontalmente */
-  transform: translateX(-50%);
-  z-index: 120;
-  pointer-events: auto;
-  display: flex;
-  flex-direction: row;  /* joystick horizontal */
-  align-items: center;
-  gap: 12px;
-}
+    #botao-container {
+      position: fixed;
+      bottom: 3%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 120;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      /* Empilha os botões em telas menores */
+      align-items: center;
+      gap: 16px;
+      /* Aumenta o espaço entre os botões */
+    }
 
-#botao-empurrar {
-  width: 200px;
-  height: 60px;
-  border-radius: 50px; 
-  border: 4px solid var(--btn-border);
-  background: var(--btn-bg);
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  padding: 0;
-}
-
-/* área do joystick dentro do botão */
-#joystick {
-  width: 180px;
-  height: 40px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 30px;
-  position: relative;
-}
-
-/* “handle” que desliza no joystick */
-#joystick-handle {
-  width: 50px;
-  height: 50px;
-  background: #00ffff;
-  border-radius: 50%;
-  position: absolute;
-  left: 50%; 
-  top: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none; 
-}
-
+    #botao-container button {
+      display: block;
+      margin: 0;
+      /* Aumenta o padding para uma área de toque maior */
+      padding: 2.5vh 8vw;
+      border-radius: 15px;
+      /* Cantos mais arredondados */
+      border: 4px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 2px;
+      cursor: pointer;
+      /* Aumenta a fonte para melhor legibilidade */
+      font-size: 5vw;
+      min-width: 200px;
+      /* Garante uma largura mínima */
+      text-align: center;
+    }
 
     /* Ajuste para telas mais largas */
     @media (min-width: 600px) {
@@ -278,15 +263,9 @@
   <div id="ui">
     <div id="placar">Montanhas: 0</div>
 
- <div id="botao-container">
-  <button id="botao-empurrar">
-    <div id="joystick">
-      <div id="joystick-handle"></div>
+    <div id="botao-container">
+      <button id="botao-empurrar">Empurrar</button>
     </div>
-    Empurrar
-  </button>
-</div>
-
 
     <div id="menu-container">
       <button id="botao-menu">Menu</button>
@@ -343,36 +322,13 @@
     const ctx = canvas.getContext('2d');
     const placarEl = document.getElementById('placar');
 
-
+    const botaoEmpurrar = document.getElementById('botao-empurrar');
     const botaoMenu = document.getElementById('botao-menu');
     const menuContainer = document.getElementById('menu-container');
     const botaoRanking = document.getElementById('botao-ranking');
     const rankingBox = document.getElementById('ranking-absurdo');
     const rankingList = document.getElementById('ranking-list');
     const checkbox = document.getElementById('mostrar-score');
-// não remove
-const botaoEmpurrar = document.getElementById('botao-empurrar');
-
-// joystick dentro do botão
-const joystick = document.getElementById("joystick");
-const handle = document.getElementById("joystick-handle");
-
-let lateralOffset = 0;
-let isDragging = false;
-
-function atualizarHandle(x) {
-  const rect = joystick.getBoundingClientRect();
-  const relativeX = Math.min(Math.max(x - rect.left, 0), rect.width);
-  lateralOffset = (relativeX / rect.width) * 2 - 1;
-  handle.style.left = `${relativeX}px`;
-}
-
-joystick.addEventListener("mousedown", e => { isDragging = true; atualizarHandle(e.clientX); });
-joystick.addEventListener("touchstart", e => { isDragging = true; atualizarHandle(e.touches[0].clientX); }, { passive: false });
-window.addEventListener("mousemove", e => { if (isDragging) atualizarHandle(e.clientX); });
-window.addEventListener("touchmove", e => { if (isDragging) atualizarHandle(e.touches[0].clientX); }, { passive: false });
-window.addEventListener("mouseup", () => { isDragging = false; lateralOffset = 0; handle.style.left = "50%"; });
-window.addEventListener("touchend", () => { isDragging = false; lateralOffset = 0; handle.style.left = "50%"; });
 
     // --------------------------
     // Imagens (coloque na pasta images)
@@ -463,34 +419,53 @@ window.addEventListener("touchend", () => { isDragging = false; lateralOffset = 
 
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function gerarPedraCaindo(posX, larguraPedra, xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
-      if (pedrasCaindo.length >= 3) return;
+    function gerarPedraCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
+    function gerarPedraCaindo(xPersonagem, wPersonagem) {
+      if (pedrasCaindo.length >= 3) return; // Limite de 3 pedras
 
-      const raioExclusao = Math.max(wPersonagem, hPersonagem) * 2; // raio do círculo de exclusão
+      const raioExclusao = Math.max(wPersonagem, hPersonagem) * 2; // raio ao redor do personagem
       const cxPersonagem = xPersonagem + wPersonagem / 2;
       const cyPersonagem = yPersonagem + hPersonagem / 2;
 
       let x, y;
-      do {
+      const raioExclusao = wPersonagem * 2; // apenas largura do personagem
+      let x;
+      const maxTentativas = 50;
+      let tentativa = 0;
+      let achouPosicao = false;
+
+      while (tentativa < maxTentativas && !achouPosicao) {
+      while (tentativa < maxTentativas) {
         x = Math.random() * (canvas.width - PEDRA_CAI_W);
-        y = -PEDRA_CAI_H; // topo da tela
-        const cxPedra = x + (larguraPedra || PEDRA_CAI_W) / 2;
-        const cyPedra = y + (larguraPedra || PEDRA_CAI_H) / 2;
+        y = -PEDRA_CAI_H - Math.random() * canvas.height * 0.2; // acima do topo, aleatório
+
+        const cxPersonagem = xPersonagem + wPersonagem / 2;
+        const cxPedra = x + PEDRA_CAI_W / 2;
+        const cyPedra = y + PEDRA_CAI_H / 2;
         const dx = cxPedra - cxPersonagem;
         const dy = cyPedra - cyPersonagem;
-        var distancia = Math.sqrt(dx * dx + dy * dy);
-      } while (distancia < raioExclusao);
+        const distancia = Math.sqrt(dx * dx + dy * dy);
+        const distanciaX = Math.abs(cxPedra - cxPersonagem);
 
+        if (distancia >= raioExclusao) achouPosicao = true;
+        if (distanciaX >= raioExclusao) break;
+        tentativa++;
+      }
+
+      if (!achouPosicao) return; // não cria pedra se não achar posição segura
+
+      const y = -PEDRA_CAI_H; // sempre acima do topo da tela
       const velocidade = 2 + Math.random() * 3;
 
       pedrasCaindo.push({
         x,
         y,
         velocidade,
-        width: larguraPedra || PEDRA_CAI_W,
-        height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H
+        width: PEDRA_CAI_W,
+        height: PEDRA_CAI_H
       });
     }
+
 
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
