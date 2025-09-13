@@ -334,7 +334,7 @@
         // --------------------------
         const ESTADOS = { PARADO: 0, SUBINDO: 1, PAUSA: 2, QUEDA: 3, SUICIDIO: 4 };
         let estado = ESTADOS.PARADO;
-        let montanhas = 0;
+        let montanhas = 0; // Contador que NÃO zera ao final de um ciclo
         let mostrarScore = false;
 
         // Estado do Slider
@@ -352,15 +352,15 @@
         });
 
         // --------------------------
-        // novas pedras caindo durante subida
+        // Pedras caindo durante subida
         // --------------------------
         const pedrasCaindo = [];
-        const PEDRA_CAI_W = 40; // largura padrão
-        const PEDRA_CAI_H = 40; // altura padrão
-        const NUM_PEDRAS_POR_GERACAO = 4; // Aumentado para 4 pedras por vez
-        const VELOCIDADE_PEDRA_MIN = 4; // Aumentada velocidade mínima
-        const VELOCIDADE_PEDRA_MAX = 7; // Aumentada velocidade máxima
-        const FREQUENCIA_GERACAO_PEDRA = 0.02; // Chance de gerar um grupo de pedras a cada frame (aumentado)
+        const PEDRA_CAI_W = 40; // Largura padrão da pedra
+        const PEDRA_CAI_H = 40; // Altura padrão da pedra
+        const NUM_PEDRAS_POR_GERACAO = 5; // Máximo de 5 pedras por vez
+        const VELOCIDADE_PEDRA_MIN = 5; // Velocidade mínima aumentada
+        const VELOCIDADE_PEDRA_MAX = 9; // Velocidade máxima aumentada
+        const FREQUENCIA_GERACAO_PEDRA = 0.03; // Chance aumentada de gerar um grupo de pedras
 
         // --- resize canvas & curves ---
         const curvaSubidaPct = [{ x: 0.15, y: 0.65 }, { x: 0.25, y: 0.40 }, { x: 0.40, y: 0.40 }, { x: 0.60, y: 0.40 }];
@@ -395,13 +395,13 @@
             const handleX = minHandleX + (maxHandleX - minHandleX) * relativeX;
             sliderHandle.style.left = `${handleX - handleWidth / 2}px`;
 
-            const maxCharacterOffset = sliderWidth * 0.4; // Ajusta o deslocamento máximo para a largura do slider
+            // Ajusta o deslocamento máximo do personagem baseado na largura do slider
+            const maxCharacterOffset = sliderWidth * 0.4;
             characterOffsetX = (sliderRelativeX - 0.5) * 2 * maxCharacterOffset;
         }
 
         function onSliderStart(event) {
-            // Permite arrastar o slider apenas se o jogo estiver ativo (SUBINDO)
-            // Ou se estiver PARADO, para iniciar uma nova partida
+            // Permite interagir com o slider se o jogo estiver SUBINDO ou PARADO (para iniciar)
             if (estado !== ESTADOS.SUBINDO && estado !== ESTADOS.PARADO) return;
 
             event.preventDefault();
@@ -414,7 +414,8 @@
         }
 
         function onSliderMove(event) {
-            if (!isSliderDragging || estado !== ESTADOS.SUBINDO) return; // Move apenas se estiver arrastando E subindo
+            // Move o slider apenas se estiver arrastando E o jogo estiver em estado de SUBIDA
+            if (!isSliderDragging || estado !== ESTADOS.SUBINDO) return;
             event.preventDefault();
             const pos = getTouchPosition(event);
             const sliderWidth = sliderContainer.clientWidth;
@@ -439,7 +440,7 @@
 
         // Adiciona listeners para desktop também
         sliderContainer.addEventListener('mousedown', onSliderStart, { passive: false });
-        document.addEventListener('mousemove', onSliderMove, { passive: false }); // Usar document para capturar movimento fora do container
+        document.addEventListener('mousemove', onSliderMove, { passive: false }); // Captura movimento fora do container
         document.addEventListener('mouseup', onSliderEnd);
         document.addEventListener('mouseleave', onSliderEnd); // Finaliza o drag se o mouse sair da janela
 
@@ -459,46 +460,50 @@
         function iniciarCiclo() {
             estado = ESTADOS.SUBINDO;
             progressoSubida = 0;
-            velSubida = 0.005;
+            velSubida = 0.005; // Velocidade inicial suave
             progressoQueda = 0;
             velQueda = 0;
-            pedrasCaindo.length = 0;
-            sliderRelativeX = 0.5;
-            characterOffsetX = 0;
-            updateSliderHandlePosition(sliderRelativeX);
-            montanhas = 0; // Reseta as montanhas ao iniciar um novo ciclo
-            placarEl.textContent = `Montanhas: ${montanhas}`; // Atualiza o placar
+            pedrasCaindo.length = 0; // Limpa as pedras para um novo ciclo
+            sliderRelativeX = 0.5; // Reseta o slider para o centro
+            characterOffsetX = 0; // Reseta o offset horizontal do personagem
+            updateSliderHandlePosition(sliderRelativeX); // Atualiza a posição visual do handle
+            // Montanhas agora NÃO zera aqui
+            placarEl.textContent = `Montanhas: ${montanhas}`; // Atualiza placar inicial
             console.log("Iniciando novo ciclo!");
         }
 
         function reiniciarParaParado() {
-            montanhas++;
+            montanhas++; // Incrementa montanhas sem zerar
             estado = ESTADOS.PARADO;
             progressoSubida = 0;
             progressoQueda = 0;
             velSubida = 0;
             velQueda = 0;
-            pedrasCaindo.length = 0;
-            sliderRelativeX = 0.5;
+            pedrasCaindo.length = 0; // Limpa as pedras
+            sliderRelativeX = 0.5; // Reseta slider
             characterOffsetX = 0;
             updateSliderHandlePosition(sliderRelativeX);
-            placarEl.textContent = `Montanhas: ${montanhas}`;
+            placarEl.textContent = `Montanhas: ${montanhas}`; // Atualiza placar com o novo valor
             console.log(`Ciclo concluído. Montanhas: ${montanhas}`);
         }
 
         function gerarPedraCaindo(xPersonagem, wPersonagem) {
-            // Gera um grupo de NUM_PEDRAS_POR_GERACAO pedras
+            // Gera um grupo de pedras
             for (let i = 0; i < NUM_PEDRAS_POR_GERACAO; i++) {
                 let x;
                 const zonaExclusao = canvas.width * 0.2; // Zona segura ao redor do personagem
 
-                // Garante que as pedras não caiam muito perto do personagem (opcional, mas bom para jogabilidade)
+                // Tenta gerar a pedra fora da zona de exclusão
+                let attempts = 0;
                 do {
                     x = Math.random() * (canvas.width - PEDRA_CAI_W);
+                    attempts++;
+                    if (attempts > 50) break; // Evita loop infinito se a tela for muito pequena
                 } while (Math.abs(x - (xPersonagem + wPersonagem / 2)) < zonaExclusao);
 
-                const y = -PEDRA_CAI_H - (i * PEDRA_CAI_H * 0.5); // Escalona o início verticalmente para cada pedra do grupo
-                const velocidade = VELOCIDADE_PEDRA_MIN + Math.random() * (VELOCIDADE_PEDRA_MAX - VELOCIDADE_PEDRA_MIN); // Velocidade aleatória no novo range
+                // Escala o início verticalmente para cada pedra do grupo, criando um efeito cascata
+                const y = -PEDRA_CAI_H - (i * PEDRA_CAI_H * 0.4); 
+                const velocidade = VELOCIDADE_PEDRA_MIN + Math.random() * (VELOCIDADE_PEDRA_MAX - VELOCIDADE_PEDRA_MIN);
                 pedrasCaindo.push({ x, y, velocidade });
             }
         }
@@ -522,7 +527,7 @@
                 ) {
                     pedrasCaindo.splice(i, 1);
                     fimDoJogoSuicidio();
-                    return;
+                    return; // Sai para evitar processar mais pedras neste frame após colisão
                 }
 
                 // Remove pedra se saiu da tela
@@ -622,24 +627,26 @@
                 const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
                 await salvarScoreSeTop10(nome, scoreAtual);
                 document.body.removeChild(caixaNome);
-                montanhas = 0; // Reinicia a contagem de montanhas para uma nova partida
-                progressoSubida = 0; // Zera o progresso da subida
-                progressoQueda = 0; // Zera o progresso da queda
-                velSubida = 0; // Zera a velocidade de subida
-                velQueda = 0; // Zera a velocidade de queda
-                pedrasCaindo.length = 0; // Limpa pedras
+                // Ao salvar, resetamos tudo para uma nova partida "limpa"
+                montanhas = 0;
+                progressoSubida = 0;
+                progressoQueda = 0;
+                velSubida = 0;
+                velQueda = 0;
+                pedrasCaindo.length = 0;
                 placarEl.textContent = `Montanhas: ${montanhas}`;
                 atualizarRanking();
             });
 
             document.getElementById('cancelar-absurdo').addEventListener('click', () => {
                 document.body.removeChild(caixaNome);
-                montanhas = 0; // Reinicia a contagem de montanhas para uma nova partida
-                progressoSubida = 0; // Zera o progresso da subida
-                progressoQueda = 0; // Zera o progresso da queda
-                velSubida = 0; // Zera a velocidade de subida
-                velQueda = 0; // Zera a velocidade de queda
-                pedrasCaindo.length = 0; // Limpa pedras
+                // Ao cancelar, também resetamos tudo para uma nova partida "limpa"
+                montanhas = 0;
+                progressoSubida = 0;
+                progressoQueda = 0;
+                velSubida = 0;
+                velQueda = 0;
+                pedrasCaindo.length = 0;
                 placarEl.textContent = `Montanhas: ${montanhas}`;
                 atualizarRanking();
             });
@@ -653,11 +660,12 @@
 
             const scaleX = canvas.width / IMG_BG.width;
             const scaleY = canvas.height / IMG_BG.height;
-            const scale = Math.min(scaleX, scaleY);
+            const scale = Math.min(scaleX, scaleY); // Escala para caber a imagem inteira
 
             const w = IMG_BG.width * scale;
             const h = IMG_BG.height * scale;
 
+            // Centraliza a imagem
             const offsetX = (canvas.width - w) / 2;
             const offsetY = (canvas.height - h) / 2;
 
@@ -668,7 +676,7 @@
         // loop principal e renderização detalhada
         // --------------------------
         function loop() {
-            // lógica de estados
+            // Lógica de estados do jogo
             if (estado === ESTADOS.SUBINDO) {
                 velSubida += aceleracaoSubida;
                 velSubida = clamp(velSubida, 0, maxVelSubida);
@@ -676,46 +684,51 @@
                 progressoSubida += velSubida;
                 progressoSubida = clamp(progressoSubida, 0, 1);
 
+                // Transição para PAUSA ao atingir o topo
                 if (progressoSubida >= 1) {
                     estado = ESTADOS.PAUSA;
-                    pausaFrames = 15;
+                    pausaFrames = 15; // Duração da pausa antes da queda
                     progressoQueda = 0;
-                    velQueda = aceleracaoQuedaInit;
+                    velQueda = aceleracaoQuedaInit; // Velocidade inicial da queda
                 }
             } else if (estado === ESTADOS.PAUSA) {
                 pausaFrames--;
-                if (pausaFrames <= 0) estado = ESTADOS.QUEDA;
+                if (pausaFrames <= 0) estado = ESTADOS.QUEDA; // Inicia a queda após a pausa
             } else if (estado === ESTADOS.QUEDA) {
                 velQueda += gravidadeQueda;
                 progressoQueda += velQueda;
                 progressoQueda = clamp(progressoQueda, 0, 1);
+                // Reinicia para o próximo ciclo quando a queda termina
                 if (progressoQueda >= 1) {
                     reiniciarParaParado();
                 }
             } else if (estado === ESTADOS.SUICIDIO) {
-                velQueda += gravidadeQueda;
+                velQueda += gravidadeQueda; // Simula a gravidade durante o estado de "suicídio"
                 progressoQueda += velQueda;
                 progressoQueda = clamp(progressoQueda, 0, 1);
+                // Chama a tela de fim de jogo quando a queda termina
                 if (progressoQueda >= 1) {
-                    estado = ESTADOS.PARADO; // Volta para parado, mas chamará o fimDoJogoSuicidio
-                    fimDoJogoSuicidio(); // Chama o modal para inserir o nome
+                    estado = ESTADOS.PARADO;
+                    fimDoJogoSuicidio();
                 }
             }
 
-            // limpar
+            // Limpa o canvas e desenha o fundo
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             desenharFundo();
 
-            // calcular posições via bezier
+            // Calcula posições baseadas nas curvas Bezier
             const pSisBase = cubicBezierPoint(progressoSubida, ...curvaSubida);
             const pQueda = cubicBezierPoint(progressoQueda, ...curvaQueda);
 
-            // dimensões relativas
+            // Dimensões relativas para Sísifo e a pedra
             const sisW = canvas.width * 0.12; const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
             const pedW = sisW * 0.7; const pedH = pedW;
 
+            // Desenho condicional baseado no estado do jogo
             if (estado === ESTADOS.SUICIDIO) {
                 const q = pQueda;
+                // Efeitos visuais para a queda e colisão
                 const sisDesvio = Math.sin(progressoQueda * Math.PI * 0.5) * (canvas.width * 0.04);
                 const sx = q.x - sisW / 2 + sisDesvio; const sy = q.y - sisH / 2;
                 if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
@@ -725,28 +738,30 @@
                 ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 1.5); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
 
             } else {
-                // subida/pause/queda regular
+                // Desenha Sísifo na posição base + offset horizontal do slider
                 const s = pSisBase;
-                // Aplica o deslocamento horizontal do slider
                 const sx = s.x - sisW / 2 + characterOffsetX;
                 const sy = s.y - sisH + (canvas.height * 0.01);
                 if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
+                // Desenha a pedra que Sísifo está carregando
                 if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
-                    const pedX = sx + sisW * 0.4; // Posição da pedra em relação ao Sísifo
+                    const pedX = sx + sisW * 0.4;
                     const pedY = sy - pedH * 0.7;
                     if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, pedX, pedY, pedW, pedH);
                 }
 
+                // Lógica de geração e atualização das pedras que caem
                 if (estado === ESTADOS.SUBINDO) {
-                    // Garante que pedras sempre caiam
+                    // Gera novas pedras com uma certa frequência
                     if (Math.random() < FREQUENCIA_GERACAO_PEDRA) {
                         gerarPedraCaindo(sx, sisW);
                     }
+                    // Atualiza posição e verifica colisões das pedras que já estão caindo
                     atualizarPedrasCaindo(sx, sy, sisW, sisH);
                 }
 
-                // Desenha a pedra caindo livremente (estado QUEDA)
+                // Desenha a pedra caindo livremente durante o estado de queda normal
                 if (estado === ESTADOS.QUEDA) {
                     const q = pQueda;
                     const px = q.x - pedW / 2; const py = q.y - pedH / 2;
@@ -754,20 +769,20 @@
                 }
             }
 
-            // placar
+            // Atualiza o placar na tela
             if (mostrarScore) placarEl.textContent = '';
             else placarEl.textContent = `Montanhas: ${montanhas}`;
 
-            requestAnimationFrame(loop);
+            requestAnimationFrame(loop); // Continua o loop de animação
         }
 
-        // start loop
+        // Inicia o loop principal do jogo
         requestAnimationFrame(loop);
 
-        // inicializa ranking no carregamento
+        // Atualiza o ranking na tela ao carregar
         atualizarRanking();
 
-        // expose algumas funções para debug via console (opcional)
+        // Exibe funções úteis no console para debug (opcional)
         window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
 
         // --------------------------
@@ -777,20 +792,20 @@
         function safeNumber(v, fallback = 0) { const n = Number(v); return Number.isNaN(n) ? fallback : n; }
 
         // --------------------------
-        // pequenas melhorias de usabilidade: iniciar com toque na tela (mobile)
+        // pequenos melhorias de usabilidade: iniciar com toque na tela (mobile)
         // --------------------------
         let tapped = false;
         function handleStartEvent() {
             if (!tapped) {
                 tapped = true;
-                // Pode ser usado para iniciar áudio ou desbloquear interações
+                // Aqui pode-se adicionar lógicas para iniciar áudio, etc.
             }
-            // Inicia o ciclo do jogo se estiver parado e houver interação
+            // Inicia o ciclo do jogo se ele estiver parado e houver qualquer interação
             if (estado === ESTADOS.PARADO) {
                  iniciarCiclo();
             }
         }
-        // Adiciona listener a todo o corpo para qualquer toque iniciar o jogo/áudio
+        // Adiciona listener a todo o corpo para qualquer toque/clique iniciar o jogo
         window.addEventListener('touchstart', handleStartEvent, { passive: true });
         window.addEventListener('mousedown', handleStartEvent, { passive: true }); // Para desktop
 
