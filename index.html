@@ -300,6 +300,10 @@
             margin-top: 10px;
             background-color: rgba(255, 255, 255, 0.8);
             color: #333;
+            /* Remove os estilos padrão de input que podem forçar o teclado */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
         .caixa-nome button {
@@ -518,6 +522,7 @@
             sliderHandle.classList.remove('active');
         }
 
+        // Event listeners fixos para o slider
         sliderContainer.addEventListener('touchstart', onSliderStart, { passive: false });
         sliderContainer.addEventListener('touchmove', onSliderMove, { passive: false });
         sliderContainer.addEventListener('touchend', onSliderEnd, { passive: false });
@@ -590,6 +595,7 @@
                 const ped = pedrasCaindo[i];
                 ped.y += ped.velocidade;
                 
+                // Aplica o filtro de pedra vermelha se o dark mode estiver ativo
                 ctx.save();
                 if (darkModeAtivo) {
                     ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)'; // Filtro para vermelho mais intenso
@@ -681,9 +687,11 @@
         // fim do jogo suicídio: pede nome e tenta salvar
         // --------------------------
         let caixaNomeElement = null;
+        let inputNomeJogador = null; // Referência para a input box
 
         function mostrarCaixaNome(scoreAtual) {
-            if (caixaNomeElement || scoreAtual <= 0) return; // Não abre se o score for 0 ou a caixa já estiver aberta
+            // Não abre a caixa se o score for 0 ou se a caixa já estiver visível
+            if (scoreAtual <= 0 || caixaNomeElement) return;
 
             caixaNomeElement = document.createElement('div');
             caixaNomeElement.className = 'caixa-nome';
@@ -698,16 +706,26 @@
             `;
             document.body.appendChild(caixaNomeElement);
 
-            // Adiciona o listener para focar e abrir o teclado apenas no input
-            const inputNome = document.getElementById('nome-jogador');
-            inputNome.addEventListener('click', () => {
-                inputNome.focus();
-            });
-            // Garante que o foco inicial também acione o teclado em alguns dispositivos
-            inputNome.focus();
+            // Captura a referência da input box *depois* de ela ser adicionada ao DOM
+            inputNomeJogador = document.getElementById('nome-jogador');
+
+            // Adiciona um listener para impedir o teclado de abrir ao Tocar diretamente na input
+            inputNomeJogador.addEventListener('touchstart', function(event) {
+                event.preventDefault(); // Impede a ação padrão de abrir o teclado
+                // Ao tocar, permitimos que o navegador trate isso como um foco normal,
+                // o que *pode* ainda abrir o teclado em alguns dispositivos, mas é menos
+                // agressivo do que o comportamento padrão em alguns cenários.
+                // Se o teclado abrir, o usuário pode fechá-lo.
+                // Uma alternativa seria usar inputNomeJogador.focus(); aqui,
+                // mas o preventDefault já é o principal controle.
+            }, { passive: false }); // Necessário para preventDefault
+
+            // Foca na input box apenas depois de configurar o listener,
+            // mas sem forçar o teclado imediatamente
+            inputNomeJogador.focus();
 
             document.getElementById('salvar-absurdo').addEventListener('click', async () => {
-                const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
+                const nome = inputNomeJogador.value.trim() || 'Anônimo';
                 await salvarScoreSeTop10(nome, scoreAtual);
                 esconderCaixaNome();
                 resetarJogoAposGameOver();
@@ -723,6 +741,7 @@
             if (caixaNomeElement && caixaNomeElement.parentNode) {
                 caixaNomeElement.parentNode.removeChild(caixaNomeElement);
                 caixaNomeElement = null;
+                inputNomeJogador = null; // Limpa a referência
             }
         }
 
@@ -760,6 +779,7 @@
 
             ctx.save();
             if (darkModeAtivo) {
+                // Ajustado para ficar mais claro
                 ctx.filter = 'brightness(0.6) contrast(1.1) grayscale(0.2)'; 
             } else {
                 ctx.filter = 'none';
