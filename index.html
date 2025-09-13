@@ -419,34 +419,25 @@
 
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function gerarPedraCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
+    function gerarPedraCaindo(xPersonagem, wPersonagem) {
       if (pedrasCaindo.length >= 3) return; // Limite de 3 pedras
 
-      const raioExclusao = Math.max(wPersonagem, hPersonagem) * 2; // raio ao redor do personagem
-      const cxPersonagem = xPersonagem + wPersonagem / 2;
-      const cyPersonagem = yPersonagem + hPersonagem / 2;
-
-      let x, y;
+      const raioExclusao = wPersonagem * 2; // apenas largura do personagem
+      let x;
       const maxTentativas = 50;
       let tentativa = 0;
-      let achouPosicao = false;
 
-      while (tentativa < maxTentativas && !achouPosicao) {
+      while (tentativa < maxTentativas) {
         x = Math.random() * (canvas.width - PEDRA_CAI_W);
-        y = -PEDRA_CAI_H - Math.random() * canvas.height * 0.2; // acima do topo, aleatório
-
+        const cxPersonagem = xPersonagem + wPersonagem / 2;
         const cxPedra = x + PEDRA_CAI_W / 2;
-        const cyPedra = y + PEDRA_CAI_H / 2;
-        const dx = cxPedra - cxPersonagem;
-        const dy = cyPedra - cyPersonagem;
-        const distancia = Math.sqrt(dx * dx + dy * dy);
+        const distanciaX = Math.abs(cxPedra - cxPersonagem);
 
-        if (distancia >= raioExclusao) achouPosicao = true;
+        if (distanciaX >= raioExclusao) break;
         tentativa++;
       }
 
-      if (!achouPosicao) return; // não cria pedra se não achar posição segura
-
+      const y = -PEDRA_CAI_H; // sempre acima do topo da tela
       const velocidade = 2 + Math.random() * 3;
 
       pedrasCaindo.push({
