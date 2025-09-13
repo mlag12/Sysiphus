@@ -402,11 +402,12 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo() {
-      const x = Math.random() * (canvas.width - PEDRA_CAI_W);
-      const y = -PEDRA_CAI_H; // começa acima da tela
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // posição horizontal aleatória
+      const y = -PEDRA_CAI_H; // sempre acima da tela
       const velocidade = 2 + Math.random() * 3; // velocidade aleatória
       pedrasCaindo.push({ x, y, velocidade });
     }
+
 
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
@@ -690,16 +691,6 @@
 
     // inicializa ranking no carregamento
     atualizarRanking();
-    
-    // calcular posição para gerar pedra (sempre acima da área do personagem)
-    const s = cubicBezierPoint(progressoSubida, ...curvaSubida); // posição aproximada do Sísifo
-    const sx = s.x - sisW / 2;
-    const pedX = sx + sisW * 0.4;
-    const pedY = s.y - sisH + (canvas.height * 0.01);
-
-    if (Math.random() < freqQueda) {
-      gerarPedraCaindo(pedX, pedW);
-    }
 
     // expose algumas funções para debug via console (opcional)
     window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
