@@ -399,79 +399,52 @@
     let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
 
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
-    function iniciarCiclo() {
-      estado = ESTADOS.SUBINDO;
-      progressoSubida = 0;
-      velSubida = 0.005;
-      progressoQueda = 0;
-      velQueda = 0;
-      movimentoAtivo = true;
-
-      // calcula posição inicial do Sisifo
-      const sisW = canvas.width * 0.12;
-      const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-      const pSis = cubicBezierPoint(progressoSubida, ...curvaSubida);
-      const sisX = pSis.x - sisW / 2;
-
-      // gera uma pedra inicial garantindo zona de exclusão
-      gerarPedraCaindo(sisX, sisW, 150);
-    }
-
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function gerarPedraCaindo(posX, larguraPedra) {
-      const x = posX !== undefined ? posX : Math.random() * (canvas.width - PEDRA_CAI_W); // Posição X definida ou aleatória
-      const y = -PEDRA_CAI_H; // Sempre acima do topo da tela
-      const velocidade = 2 + Math.random() * 3; // Velocidade aleatória para as pedras que caem
-      pedrasCaindo.push({ x, y, velocidade, width: larguraPedra || PEDRA_CAI_W, height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H });
-    function gerarPedraCaindo(sisX, sisW, raioExclusao = 150) {
-      let x;
-      const tentativasMax = 100; // evita loop infinito
-
-      for (let i = 0; i < tentativasMax; i++) {
-        x = Math.random() * (canvas.width - PEDRA_CAI_W);
-        // se a pedra não estiver dentro do raio de exclusão do personagem, aceita
-        if (x + PEDRA_CAI_W < sisX - raioExclusao || x > sisX + sisW + raioExclusao) break;
-      }
-
-      const y = -PEDRA_CAI_H; // sempre acima do topo
-      const velocidade = 2 + Math.random() * 3;
+    function gerarPedraCaindo() {
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W);
+      const y = -PEDRA_CAI_H; // começa acima da tela
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // posição horizontal aleatória
+      const y = -PEDRA_CAI_H; // sempre acima da tela
+      const velocidade = 2 + Math.random() * 3; // velocidade aleatória
       pedrasCaindo.push({ x, y, velocidade });
     }
-
-
-
-
 
 
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
         const ped = pedrasCaindo[i];
-        ped.y += ped.velocidade; // cai para baixo
+        ped.y += ped.velocidade;
 
-        // desenha
+        // desenhar pedra
         if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
 
-        // colisão com personagem
+        // checar colisão com personagem ou pedra dele
         if (
           ped.x < xPersonagem + wPersonagem &&
           ped.x + PEDRA_CAI_W > xPersonagem &&
           ped.y < yPersonagem + hPersonagem &&
           ped.y + PEDRA_CAI_H > yPersonagem
         ) {
-          pedrasCaindo.splice(i, 1);
-          fimDoJogoSuicidio();
+          // colisão detectada
+          pedrasCaindo.splice(i, 1); // remove pedra
+
+          // fim de jogo: tenta salvar se pontuação suficiente
+          if (montanhas > 0) {
+            fimDoJogoSuicidio(); // usa a função já existente que pede nome e tenta salvar
+          }
+
+          // reinicia score
           montanhas = 0;
           progressoSubida = progressoQueda = 0;
           velSubida = velQueda = 0;
-          return;
+          return; // sai da função para não processar mais pedras neste frame
         }
 
-        // remove se sair da tela
+        // remover se saiu da tela
         if (ped.y > canvas.height) pedrasCaindo.splice(i, 1);
       }
     }
-
 
 
 
@@ -687,19 +660,6 @@
             const sx = s.x - sisW / 2;
             const pedX = sx + sisW * 0.4;
             gerarPedraCaindo(pedX, pedW);
-            gerarPedraCaindo(sisX, sisW, 150);
-          }
-
-          let pedraX;
-          const margemGap = pedW * 1.5; // Margem para o gap passar o personagem
-
-          const GAP_WIDTH = sisW * 1.5; // Largura do gap para o Sísifo passar
-          const MAX_X = canvas.width - PEDRA_CAI_W; // Posição X máxima para a pedra cair
-
-          if (Math.random() < 0.5) { // Slot 1: mais à esquerda
-            pedraX = Math.random() * (canvas.width / 2 - GAP_WIDTH); // Área à esquerda, garantindo espaço
-          } else { // Slot 2: mais à direita
-            pedraX = (canvas.width / 2 + GAP_WIDTH / 2) + Math.random() * (canvas.width / 2 - GAP_WIDTH / 2); // Área à direita
           }
 
           const s = pSis;
@@ -707,7 +667,6 @@
           const sy = s.y - sisH + (canvas.height * 0.01);
           const pedX = sx + sisW * 0.4;
           const pedY = sy - pedH * 0.7;
-
 
           // atualiza colisões e desenha pedras
           atualizarPedrasCaindo(sx, sy, sisW, sisH);  // personagem
@@ -734,6 +693,16 @@
 
     // inicializa ranking no carregamento
     atualizarRanking();
+    
+    // calcular posição para gerar pedra (sempre acima da área do personagem)
+    const s = cubicBezierPoint(progressoSubida, ...curvaSubida); // posição aproximada do Sísifo
+    const sx = s.x - sisW / 2;
+    const pedX = sx + sisW * 0.4;
+    const pedY = s.y - sisH + (canvas.height * 0.01);
+
+    if (Math.random() < freqQueda) {
+      gerarPedraCaindo(pedX, pedW);
+    }
 
     // expose algumas funções para debug via console (opcional)
     window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
