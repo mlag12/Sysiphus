@@ -401,23 +401,37 @@
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function gerarPedraCaindo() {
-      // faixa horizontal da subida (ajuste conforme o desenho da montanha)
-      const inicioX = canvas.width * 0.1;   // lado esquerdo
-      const fimX = canvas.width * 0.5;   // até o meio da tela
+    // substitua a função antiga por esta
+function gerarPedraCaindo(forcedX) {
+  // zonas horizontais permitidas (evita área central onde fica o personagem)
+  const leftMin = canvas.width * 0.02;
+  const leftMax = canvas.width * 0.45;
+  const rightMin = canvas.width * 0.55;
+  const rightMax = canvas.width * 0.98;
 
-      // posição horizontal aleatória dentro da subida
-      const x = inicioX + Math.random() * (fimX - inicioX - PEDRA_CAI_W);
-
-      // sempre começa acima da tela, nunca em cima do personagem
-      const y = -PEDRA_CAI_H - Math.random() * (canvas.height * 0.1);
-
-      // velocidade entre 2 e 5 (ajustável)
-      const velocidade = 2 + Math.random() * 3;
-
-      // adiciona no array de pedras caindo
-      pedrasCaindo.push({ x, y, velocidade });
+  let x;
+  if (typeof forcedX === 'number') {
+    // se foi passada uma posição forçada, usa ela (mas clamp para dentro da tela)
+    x = clamp(forcedX, 0, canvas.width - PEDRA_CAI_W);
+  } else {
+    // escolhe entre faixa esquerda ou direita para NÃO nascer perto do personagem
+    if (Math.random() < 0.5) {
+      x = leftMin + Math.random() * (leftMax - leftMin - PEDRA_CAI_W);
+    } else {
+      x = rightMin + Math.random() * (rightMax - rightMin - PEDRA_CAI_W);
     }
+  }
+
+  // garante que a pedra sempre nasça acima do topo da tela (y negativo),
+  // com margem adicional para nunca aparecer no meio da tela:
+  const y = -PEDRA_CAI_H - Math.random() * (canvas.height * 0.25);
+
+  // velocidade aleatória (ajuste se quiser pedras mais rápidas/lentas)
+  const velocidade = 2 + Math.random() * 3;
+
+  pedrasCaindo.push({ x, y, velocidade });
+}
+
 
 
 
