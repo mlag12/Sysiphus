@@ -398,6 +398,7 @@
     let maxVelSubida = 0.01, aceleracaoSubida = 0.003, desaceleraSubida = 0.9;
     let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
 
+    function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function iniciarCiclo() {
       estado = ESTADOS.SUBINDO;
       progressoSubida = 0;
@@ -416,9 +417,13 @@
       gerarPedraCaindo(sisX, sisW, 150);
     }
 
-    function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
+    function gerarPedraCaindo(posX, larguraPedra) {
+      const x = posX !== undefined ? posX : Math.random() * (canvas.width - PEDRA_CAI_W); // Posição X definida ou aleatória
+      const y = -PEDRA_CAI_H; // Sempre acima do topo da tela
+      const velocidade = 2 + Math.random() * 3; // Velocidade aleatória para as pedras que caem
+      pedrasCaindo.push({ x, y, velocidade, width: larguraPedra || PEDRA_CAI_W, height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H });
     function gerarPedraCaindo(sisX, sisW, raioExclusao = 150) {
       let x;
       const tentativasMax = 100; // evita loop infinito
@@ -432,11 +437,6 @@
       const y = -PEDRA_CAI_H; // sempre acima do topo
       const velocidade = 2 + Math.random() * 3;
       pedrasCaindo.push({ x, y, velocidade });
-    function gerarPedraCaindo(posX, larguraPedra) {
-      const x = posX !== undefined ? posX : Math.random() * (canvas.width - PEDRA_CAI_W); // Posição X definida ou aleatória
-      const y = -PEDRA_CAI_H; // Sempre acima do topo da tela
-      const velocidade = 2 + Math.random() * 3; // Velocidade aleatória para as pedras que caem
-      pedrasCaindo.push({ x, y, velocidade, width: larguraPedra || PEDRA_CAI_W, height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H });
     }
 
 
@@ -686,15 +686,9 @@
             const s = pSis;
             const sx = s.x - sisW / 2;
             const pedX = sx + sisW * 0.4;
-            gerarPedraCaindo(sisX, sisW, 150);
             gerarPedraCaindo(pedX, pedW);
+            gerarPedraCaindo(sisX, sisW, 150);
           }
-
-          const s = pSis;
-          const sx = s.x - sisW / 2;
-          const sy = s.y - sisH + (canvas.height * 0.01);
-          const pedX = sx + sisW * 0.4;
-          const pedY = sy - pedH * 0.7;
 
           let pedraX;
           const margemGap = pedW * 1.5; // Margem para o gap passar o personagem
