@@ -169,18 +169,19 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(2deg);
-      /* Aumenta o padding para melhor visualização em telas maiores */
-      padding: 5vh 8vw;
+      padding: 5vh 12vw;
+      /* aumenta horizontalmente */
       background: rgba(0, 0, 0, 0.95);
       border: 4px dashed red;
       color: white;
       font-family: "Courier New", monospace;
-      /* Aumenta a fonte do modal */
       font-size: 3.5vh;
       text-align: center;
       z-index: 1000;
       max-height: 70vh;
       overflow-y: auto;
+      min-width: 300px;
+      /* largura mínima para não quebrar */
     }
 
     #ranking-absurdo h1 {
@@ -400,67 +401,67 @@
     // - validamos o `nome` (máx 20 caracteres) e o `score` (Number >=0).
     // --------------------------
     // --------------------------
-// Função para salvar score no Firestore se estiver no top 10
-// --------------------------
-async function salvarScoreSeTop10(nome, score) {
-  try {
-    const top10Query = query(scoresCollection, orderBy("score", "desc"), limit(10));
-    const snapshot = await getDocs(top10Query);
-    let top10 = [];
-    snapshot.forEach(doc => {
-      top10.push({ id: doc.id, ...doc.data() });
-    });
+    // Função para salvar score no Firestore se estiver no top 10
+    // --------------------------
+    async function salvarScoreSeTop10(nome, score) {
+      try {
+        const top10Query = query(scoresCollection, orderBy("score", "desc"), limit(10));
+        const snapshot = await getDocs(top10Query);
+        let top10 = [];
+        snapshot.forEach(doc => {
+          top10.push({ id: doc.id, ...doc.data() });
+        });
 
-    // Verifica se entrou no top 10
-    const entrou = top10.length < 10 || score > top10[top10.length - 1].score;
+        // Verifica se entrou no top 10
+        const entrou = top10.length < 10 || score > top10[top10.length - 1].score;
 
-    if (entrou) {
-      // Salva o novo score
-      await addDoc(scoresCollection, {
-        name: nome || "Anônimo",
-        score: Number(score),
-        createdAt: new Date()
-      });
+        if (entrou) {
+          // Salva o novo score
+          await addDoc(scoresCollection, {
+            name: nome || "Anônimo",
+            score: Number(score),
+            createdAt: new Date()
+          });
+        }
+
+        return entrou;
+      } catch (err) {
+        console.error("Erro ao salvar score:", err);
+        return false;
+      }
     }
 
-    return entrou;
-  } catch (err) {
-    console.error("Erro ao salvar score:", err);
-    return false;
-  }
-}
+    // --------------------------
+    // Atualiza ranking exibido (top 10) a partir do Firestore
+    // --------------------------
+    async function atualizarRanking() {
+      try {
+        const top10Query = query(scoresCollection, orderBy("score", "desc"), limit(10));
+        const snapshot = await getDocs(top10Query);
 
-// --------------------------
-// Atualiza ranking exibido (top 10) a partir do Firestore
-// --------------------------
-async function atualizarRanking() {
-  try {
-    const top10Query = query(scoresCollection, orderBy("score", "desc"), limit(10));
-    const snapshot = await getDocs(top10Query);
+        rankingList.innerHTML = '';
+        const scores = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          scores.push({ nome: data.name || 'Anônimo', score: Number(data.score) || 0 });
+        });
 
-    rankingList.innerHTML = '';
-    const scores = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      scores.push({ nome: data.name || 'Anônimo', score: Number(data.score) || 0 });
-    });
+        if (scores.length === 0) {
+          const li = document.createElement('li');
+          li.textContent = 'Ainda não há scores.';
+          rankingList.appendChild(li);
+          return;
+        }
 
-    if (scores.length === 0) {
-      const li = document.createElement('li');
-      li.textContent = 'Ainda não há scores.';
-      rankingList.appendChild(li);
-      return;
+        scores.forEach((s, i) => {
+          const li = document.createElement('li');
+          li.textContent = `${i + 1}. ${s.nome} - ${s.score}`;
+          rankingList.appendChild(li);
+        });
+      } catch (err) {
+        console.error("Erro ao atualizar ranking:", err);
+      }
     }
-
-    scores.forEach((s, i) => {
-      const li = document.createElement('li');
-      li.textContent = `${i + 1}. ${s.nome} - ${s.score}`;
-      rankingList.appendChild(li);
-    });
-  } catch (err) {
-    console.error("Erro ao atualizar ranking:", err);
-  }
-}
 
     // --------------------------
     // fim do jogo suicídio: pede nome e tenta salvar
