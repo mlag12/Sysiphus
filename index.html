@@ -300,10 +300,8 @@
             margin-top: 10px;
             background-color: rgba(255, 255, 255, 0.8);
             color: #333;
-            /* Remove os estilos padrão de input que podem forçar o teclado */
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
+            /* Adicionado para controlar o comportamento do teclado em mobile */
+            caret-color: #ff004d; /* Cor do cursor de digitação */
         }
 
         .caixa-nome button {
@@ -321,6 +319,7 @@
     </style>
 </head>
 <body>
+    <audio id="game-music" loop></audio>
     <canvas id="game"></canvas>
 
     <div id="ui">
@@ -336,6 +335,7 @@
                 <button id="botao-ranking">Ranking</button>
                 <label><input type="checkbox" id="mostrar-score"> Mostrar Score</label>
                 <label><input type="checkbox" id="dark-mode-toggle"> Modo Escuro</label>
+                <label><input type="checkbox" id="music-toggle"> Música</label>
             </div>
         </div>
 
@@ -384,6 +384,7 @@
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
         const placarEl = document.getElementById('placar');
+        const audioMusic = document.getElementById('game-music');
 
         // Slider Elements
         const sliderContainer = document.getElementById('slider-container');
@@ -396,6 +397,7 @@
         const rankingList = document.getElementById('ranking-list');
         const checkboxMostrarScore = document.getElementById('mostrar-score');
         const checkboxDarkMode = document.getElementById('dark-mode-toggle');
+        const checkboxMusic = document.getElementById('music-toggle'); // Checkbox de Música
 
 
         // --------------------------
@@ -413,6 +415,7 @@
         let montanhas = 0;
         let mostrarScore = false;
         let darkModeAtivo = false;
+        let musicaAtiva = false; // Estado da música
 
         // Estado do Slider
         let isSliderDragging = false;
@@ -425,17 +428,43 @@
         checkboxDarkMode.addEventListener('change', () => {
             darkModeAtivo = checkboxDarkMode.checked;
             document.body.classList.toggle('dark-mode', darkModeAtivo);
-            // Salvar preferência no localStorage
-            localStorage.setItem('darkModePreference', darkModeAtivo);
+            localStorage.setItem('darkModePreference', darkModeAtivo); // Salva preferência
         });
 
-        // Carregar preferência de Dark Mode ao iniciar
+        // Checkbox de Música
+        checkboxMusic.addEventListener('change', () => {
+            musicaAtiva = checkboxMusic.checked;
+            if (musicaAtiva) {
+                audioMusic.play().catch(e => console.error("Erro ao tocar música:", e)); // Tenta tocar e trata erro
+            } else {
+                audioMusic.pause();
+            }
+            localStorage.setItem('musicPreference', musicaAtiva); // Salva preferência
+        });
+
+        // Carregar preferências ao iniciar
         const savedDarkMode = localStorage.getItem('darkModePreference');
         if (savedDarkMode !== null) {
             darkModeAtivo = JSON.parse(savedDarkMode);
             checkboxDarkMode.checked = darkModeAtivo;
             document.body.classList.toggle('dark-mode', darkModeAtivo);
         }
+
+        const savedMusic = localStorage.getItem('musicPreference');
+        if (savedMusic !== null) {
+            musicaAtiva = JSON.parse(savedMusic);
+            checkboxMusic.checked = musicaAtiva;
+            if (musicaAtiva) {
+                audioMusic.play().catch(e => console.error("Erro ao tocar música ao carregar:", e));
+            }
+        } else {
+            // Se não houver preferência salva, toca música por padrão
+            musicaAtiva = true;
+            checkboxMusic.checked = true;
+            audioMusic.play().catch(e => console.error("Erro ao tocar música por padrão:", e));
+        }
+        audioMusic.src = 'sound/If You Hold A Stone.mp3'; // Define a fonte da música
+
 
         botaoRanking.addEventListener('click', () => {
             const isShown = rankingBox.style.display === 'block';
@@ -444,7 +473,7 @@
         });
 
         // --------------------------
-        // novas pedras caindo durante subida
+        // Novas pedras caindo durante subida
         // --------------------------
         const pedrasCaindo = [];
         const PEDRA_CAI_W = 40; // largura padrão
@@ -687,11 +716,13 @@
         // fim do jogo suicídio: pede nome e tenta salvar
         // --------------------------
         let caixaNomeElement = null;
-        let inputNomeJogador = null; // Referência para a input box
 
         function mostrarCaixaNome(scoreAtual) {
-            // Não abre a caixa se o score for 0 ou se a caixa já estiver visível
-            if (scoreAtual <= 0 || caixaNomeElement) return;
+            // Só mostra a caixa se o score for maior que 0 E a caixa não estiver visível
+            if (scoreAtual <= 0 || caixaNomeElement) {
+                if (scoreAtual <= 0) resetarJogoAposGameOver(); // Reinicia se o score for 0, sem mostrar a caixa
+                return; 
+            }
 
             caixaNomeElement = document.createElement('div');
             caixaNomeElement.className = 'caixa-nome';
@@ -705,27 +736,22 @@
                 </div>
             `;
             document.body.appendChild(caixaNomeElement);
+            
+            // Adiciona listener específico ao input para evitar auto-foco do teclado
+            const inputNome = document.getElementById('nome-jogador');
+            inputNome.addEventListener('focus', () => {
+                // Em dispositivos móveis, o teclado pode abrir automaticamente. 
+                // Não há um método nativo puro para *impedir* que ele abra ao focar.
+                // No entanto, ao não focar automaticamente ao criar a caixa, 
+                // damos controle ao usuário para tocar onde quer digitar.
+            }, { once: true }); // Tenta executar apenas uma vez
 
-            // Captura a referência da input box *depois* de ela ser adicionada ao DOM
-            inputNomeJogador = document.getElementById('nome-jogador');
-
-            // Adiciona um listener para impedir o teclado de abrir ao Tocar diretamente na input
-            inputNomeJogador.addEventListener('touchstart', function(event) {
-                event.preventDefault(); // Impede a ação padrão de abrir o teclado
-                // Ao tocar, permitimos que o navegador trate isso como um foco normal,
-                // o que *pode* ainda abrir o teclado em alguns dispositivos, mas é menos
-                // agressivo do que o comportamento padrão em alguns cenários.
-                // Se o teclado abrir, o usuário pode fechá-lo.
-                // Uma alternativa seria usar inputNomeJogador.focus(); aqui,
-                // mas o preventDefault já é o principal controle.
-            }, { passive: false }); // Necessário para preventDefault
-
-            // Foca na input box apenas depois de configurar o listener,
-            // mas sem forçar o teclado imediatamente
-            inputNomeJogador.focus();
-
+            // Se você quiser forçar o teclado a aparecer APENAS ao tocar, 
+            // essa configuração do input (e a ausência de auto-foco) já ajuda.
+            // A linha `inputNome.focus()` foi removida para evitar o auto-foco.
+            
             document.getElementById('salvar-absurdo').addEventListener('click', async () => {
-                const nome = inputNomeJogador.value.trim() || 'Anônimo';
+                const nome = inputNome.value.trim() || 'Anônimo';
                 await salvarScoreSeTop10(nome, scoreAtual);
                 esconderCaixaNome();
                 resetarJogoAposGameOver();
@@ -741,7 +767,6 @@
             if (caixaNomeElement && caixaNomeElement.parentNode) {
                 caixaNomeElement.parentNode.removeChild(caixaNomeElement);
                 caixaNomeElement = null;
-                inputNomeJogador = null; // Limpa a referência
             }
         }
 
@@ -768,7 +793,7 @@
             sliderRelativeX = 0.5;
             characterOffsetX = 0;
             updateSliderHandlePosition(sliderRelativeX);
-            mostrarCaixaNome(scoreAtual);
+            mostrarCaixaNome(scoreAtual); // Agora só mostra se scoreAtual > 0
         }
 
         // --------------------------
@@ -779,7 +804,6 @@
 
             ctx.save();
             if (darkModeAtivo) {
-                // Ajustado para ficar mais claro
                 ctx.filter = 'brightness(0.6) contrast(1.1) grayscale(0.2)'; 
             } else {
                 ctx.filter = 'none';
@@ -907,6 +931,9 @@
 
         function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
         function safeNumber(v, fallback = 0) { const n = Number(v); return Number.isNaN(n) ? fallback : n; }
+
+        // A lógica de iniciar o jogo agora está atrelada ao slider.
+        // Removi os listeners globais de 'touchstart' e 'mousedown' de 'window'.
     </script>
 </body>
 </html>
