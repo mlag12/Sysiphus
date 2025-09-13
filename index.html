@@ -606,6 +606,7 @@
     // loop principal e renderização detalhada
     // --------------------------
     function loop() {
+
       // lógica de estados
       if (estado === ESTADOS.SUBINDO) {
         if (movimentoAtivo) { velSubida += aceleracaoSubida; if (velSubida > maxVelSubida) velSubida = maxVelSubida; }
@@ -669,8 +670,6 @@
           atualizarPedrasCaindo(pedX, pedY, pedW, pedH); // pedra que ele carrega
         }
 
-
-
         if (estado === ESTADOS.QUEDA) {
           const q = pQueda;
           const px = q.x - pedW / 2; const py = q.y - pedH / 2;
@@ -685,11 +684,22 @@
       requestAnimationFrame(loop);
     }
 
+
     // start loop
     requestAnimationFrame(loop);
 
     // inicializa ranking no carregamento
     atualizarRanking();
+    
+    // calcular posição para gerar pedra (sempre acima da área do personagem)
+    const s = cubicBezierPoint(progressoSubida, ...curvaSubida); // posição aproximada do Sísifo
+    const sx = s.x - sisW / 2;
+    const pedX = sx + sisW * 0.4;
+    const pedY = s.y - sisH + (canvas.height * 0.01);
+
+    if (Math.random() < freqQueda) {
+      gerarPedraCaindo(pedX, pedW);
+    }
 
     // expose algumas funções para debug via console (opcional)
     window._game = { reiniciarParaParado, iniciarCiclo, atualizarRanking };
