@@ -401,26 +401,32 @@
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function gerarPedraCaindo() {
-  let x;
-  // Define duas faixas onde as pedras podem cair: início e fim da tela
-  const faixaEsquerda = canvas.width * 0.1;
-  const faixaDireita = canvas.width * 0.9;
-  const larguraFaixa = canvas.width * 0.15; // Largura para cair dentro de cada faixa
+    function gerarPedraCaindo(xPersonagem, wPersonagem) {
+      let x;
+      const zonaExclusao = canvas.width * 0.2; // Define uma zona de exclusão de 20% da largura da tela ao redor do personagem
 
-  if (Math.random() < 0.5) { // 50% de chance de cair na faixa esquerda
-    x = Math.random() * larguraFaixa;
-  } else { // 50% de chance de cair na faixa direita
-    x = faixaDireita + Math.random() * larguraFaixa;
-  }
+      // Loop para garantir que a pedra não nasça muito perto
+      do {
+        // Define duas faixas onde as pedras podem cair: início e fim da tela
+        const faixaEsquerda = canvas.width * 0.1;
+        const faixaDireita = canvas.width * 0.9;
+        const larguraFaixa = canvas.width * 0.15; // Largura para cair dentro de cada faixa
 
-  // Garante que X não ultrapasse os limites da tela
-  x = Math.max(0, Math.min(x, canvas.width - PEDRA_CAI_W));
+        if (Math.random() < 0.5) { // 50% de chance de cair na faixa esquerda
+          x = Math.random() * larguraFaixa;
+        } else { // 50% de chance de cair na faixa direita
+          x = faixaDireita + Math.random() * larguraFaixa;
+        }
 
-  const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
-  const velocidade = 2 + Math.random() * 3;
-  pedrasCaindo.push({ x, y, velocidade });
-}
+        // Garante que X não ultrapasse os limites da tela
+        x = Math.max(0, Math.min(x, canvas.width - PEDRA_CAI_W));
+
+      } while (Math.abs(x - (xPersonagem + wPersonagem / 2)) < zonaExclusao); // Condição para repetir a geração
+
+      const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
+      const velocidade = 2 + Math.random() * 3;
+      pedrasCaindo.push({ x, y, velocidade });
+    }
 
 
 
