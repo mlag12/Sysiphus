@@ -265,7 +265,6 @@
 
     <div id="botao-container">
       <button id="botao-empurrar">Empurrar</button>
-      <button id="botao-suicidar">Suicidar</button>
     </div>
 
     <div id="menu-container">
@@ -324,7 +323,6 @@
     const placarEl = document.getElementById('placar');
 
     const botaoEmpurrar = document.getElementById('botao-empurrar');
-    const botaoSuicidar = document.getElementById('botao-suicidar');
     const botaoMenu = document.getElementById('botao-menu');
     const menuContainer = document.getElementById('menu-container');
     const botaoRanking = document.getElementById('botao-ranking');
@@ -387,10 +385,6 @@
     botaoEmpurrar.addEventListener('touchstart', e => { e.preventDefault(); pressionar(); }, { passive: false });
     botaoEmpurrar.addEventListener('mouseup', soltar);
     botaoEmpurrar.addEventListener('touchend', soltar, { passive: false });
-
-    botaoSuicidar.addEventListener('click', () => {
-      if (estado !== ESTADOS.SUICIDIO) { estado = ESTADOS.SUICIDIO; progressoQueda = 0; velQueda = 0.008; }
-    });
 
     // --- movimento / física ---
     function cubicBezierPoint(t, p0, p1, p2, p3) {
