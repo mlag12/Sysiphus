@@ -402,13 +402,20 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo() {
-      // limite horizontal: apenas na área da subida
-      const inicioX = canvas.width * 0.1;   // 10% da tela
-      const fimX = canvas.width * 0.8;   // até metade da tela (ajuste como preferir)
+      // faixa horizontal da subida (ajuste conforme o desenho da montanha)
+      const inicioX = canvas.width * 0.1;   // lado esquerdo
+      const fimX = canvas.width * 0.5;   // até o meio da tela
 
+      // posição horizontal aleatória dentro da subida
       const x = inicioX + Math.random() * (fimX - inicioX - PEDRA_CAI_W);
-      const y = -PEDRA_CAI_H; // sempre acima da tela
-      const velocidade = 2 + Math.random() * 3; // aleatória
+
+      // sempre começa acima da tela, nunca em cima do personagem
+      const y = -PEDRA_CAI_H - Math.random() * (canvas.height * 0.3);
+
+      // velocidade entre 2 e 5 (ajustável)
+      const velocidade = 2 + Math.random() * 3;
+
+      // adiciona no array de pedras caindo
       pedrasCaindo.push({ x, y, velocidade });
     }
 
