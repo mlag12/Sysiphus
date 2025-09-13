@@ -402,25 +402,12 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo() {
-      let x;
-      // Define duas faixas onde as pedras podem cair: início e fim da tela
-      const faixaEsquerda = canvas.width * 0.1;
-      const faixaDireita = canvas.width * 0.9;
-      const larguraFaixa = canvas.width * 0.15; // Largura para cair dentro de cada faixa
-
-      if (Math.random() < 0.5) { // 50% de chance de cair na faixa esquerda
-        x = Math.random() * larguraFaixa;
-      } else { // 50% de chance de cair na faixa direita
-        x = faixaDireita + Math.random() * larguraFaixa;
-      }
-
-      // Garante que X não ultrapasse os limites da tela
-      x = Math.max(0, Math.min(x, canvas.width - PEDRA_CAI_W));
-
-      const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
-      const velocidade = 2 + Math.random() * 3;
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W); // aleatório horizontal
+      const y = -PEDRA_CAI_H; // sempre acima do topo
+      const velocidade = 2 + Math.random() * 3; // velocidade aleatória
       pedrasCaindo.push({ x, y, velocidade });
     }
+
 
 
 
@@ -428,42 +415,31 @@
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
         const ped = pedrasCaindo[i];
+        ped.y += ped.velocidade; // cai para baixo
 
-        // Atualiza posição da pedra
-        ped.y += ped.velocidade;
+        // desenha
+        if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
 
-        // Desenhar pedra
-        if (IMG_PEDRA.complete) {
-          ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
-        }
-
-        // Checar colisão com o personagem
+        // colisão com personagem
         if (
           ped.x < xPersonagem + wPersonagem &&
           ped.x + PEDRA_CAI_W > xPersonagem &&
           ped.y < yPersonagem + hPersonagem &&
           ped.y + PEDRA_CAI_H > yPersonagem
         ) {
-          // Colisão detectada: remove pedra e reinicia jogo
           pedrasCaindo.splice(i, 1);
-
-          // Fim de jogo: chama função existente
           fimDoJogoSuicidio();
-
-          // Reseta score e progresso
           montanhas = 0;
           progressoSubida = progressoQueda = 0;
           velSubida = velQueda = 0;
-
-          return; // sai da função para não processar mais pedras neste frame
+          return;
         }
 
-        // Remove pedra se saiu da tela
-        if (ped.y > canvas.height) {
-          pedrasCaindo.splice(i, 1);
-        }
+        // remove se sair da tela
+        if (ped.y > canvas.height) pedrasCaindo.splice(i, 1);
       }
     }
+
 
 
 
