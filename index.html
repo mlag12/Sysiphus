@@ -236,7 +236,7 @@
             font-size: 3.5vh;
             text-align: center;
             z-index: 1000;
-            max-height: 70vh;
+            max-height: 80vh; /* Aumentado para caber o Top 10 */
             overflow-y: auto;
             min-width: 300px; /* Ajustado para melhor visualização em telas menores */
             width: auto;
@@ -421,9 +421,11 @@
         checkboxDarkMode.addEventListener('change', () => {
             darkModeAtivo = checkboxDarkMode.checked;
             document.body.classList.toggle('dark-mode', darkModeAtivo);
+            // Salvar preferência no localStorage
             localStorage.setItem('darkModePreference', darkModeAtivo);
         });
 
+        // Carregar preferência de Dark Mode ao iniciar
         const savedDarkMode = localStorage.getItem('darkModePreference');
         if (savedDarkMode !== null) {
             darkModeAtivo = JSON.parse(savedDarkMode);
@@ -444,9 +446,8 @@
         const PEDRA_CAI_W = 40; // largura padrão
         const PEDRA_CAI_H = 40; // altura padrão
         const NUM_PEDRAS_POR_GERACAO = 6;
-        // Velocidades agora aumentadas significativamente
-        const VELOCIDADE_PEDRA_MIN = 10; 
-        const VELOCIDADE_PEDRA_MAX = 18;
+        const VELOCIDADE_PEDRA_MIN = 10; // Aumentada
+        const VELOCIDADE_PEDRA_MAX = 15; // Aumentada
         const FREQUENCIA_GERACAO_PEDRA = 0.025; 
 
         // --- resize canvas & curves ---
@@ -459,7 +460,7 @@
         function resize() {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             curvaSubida = pctToPx(curvaSubidaPct); curvaQueda = pctToPx(curvaQuedaPct);
-            updateSliderHandlePosition(sliderRelativeX);
+            updateSliderHandlePosition(sliderRelativeX); // Garante que o handle se ajuste após o resize
         }
         window.addEventListener('resize', resize); resize();
 
@@ -482,12 +483,11 @@
             const handleX = minHandleX + (maxHandleX - minHandleX) * relativeX;
             sliderHandle.style.left = `${handleX - handleWidth / 2}px`;
 
-            const maxCharacterOffset = sliderWidth * 0.4;
+            const maxCharacterOffset = sliderWidth * 0.4; // Ajusta o deslocamento máximo para a largura do slider
             characterOffsetX = (sliderRelativeX - 0.5) * 2 * maxCharacterOffset;
         }
 
         function onSliderStart(event) {
-            // Corrigido: O slider só deve ser interativo se o jogo estiver SUBINDO ou PARADO
             if (estado !== ESTADOS.SUBINDO && estado !== ESTADOS.PARADO) return;
 
             event.preventDefault();
@@ -518,7 +518,7 @@
             sliderHandle.classList.remove('active');
         }
 
-        // Event listeners for touch and mouse
+        // Event listeners fixos para o slider
         sliderContainer.addEventListener('touchstart', onSliderStart, { passive: false });
         sliderContainer.addEventListener('touchmove', onSliderMove, { passive: false });
         sliderContainer.addEventListener('touchend', onSliderEnd, { passive: false });
@@ -528,6 +528,11 @@
         document.addEventListener('mousemove', onSliderMove, { passive: false });
         document.addEventListener('mouseup', onSliderEnd);
         document.addEventListener('mouseleave', onSliderEnd);
+
+        // Remove os listeners globais que causavam o bug
+        // window.removeEventListener('touchstart', handleStartEvent);
+        // window.removeEventListener('mousedown', handleStartEvent);
+
 
         // --- movimento / física ---
         function cubicBezierPoint(t, p0, p1, p2, p3) {
@@ -590,6 +595,7 @@
                 const ped = pedrasCaindo[i];
                 ped.y += ped.velocidade;
                 
+                // Aplica o filtro de pedra vermelha se o dark mode estiver ativo
                 ctx.save();
                 if (darkModeAtivo) {
                     ctx.filter = 'brightness(1.2) hue-rotate(-40deg) saturate(3) sepia(0.5)'; // Filtro para vermelho mais intenso
@@ -680,10 +686,10 @@
         // --------------------------
         // fim do jogo suicídio: pede nome e tenta salvar
         // --------------------------
-        let caixaNomeElement = null; 
+        let caixaNomeElement = null;
 
         function mostrarCaixaNome(scoreAtual) {
-            if (caixaNomeElement) return; 
+            if (caixaNomeElement || scoreAtual <= 0) return; // Não abre se o score for 0 ou a caixa já estiver aberta
 
             caixaNomeElement = document.createElement('div');
             caixaNomeElement.className = 'caixa-nome';
@@ -697,7 +703,7 @@
                 </div>
             `;
             document.body.appendChild(caixaNomeElement);
-            document.getElementById('nome-jogador').focus(); 
+            document.getElementById('nome-jogador').focus();
 
             document.getElementById('salvar-absurdo').addEventListener('click', async () => {
                 const nome = document.getElementById('nome-jogador').value.trim() || 'Anônimo';
@@ -720,13 +726,17 @@
         }
 
         function resetarJogoAposGameOver() {
-            montanhas = 0; // O contador é zerado apenas QUANDO O JOGO TERMINA
+            montanhas = 0;
+            estado = ESTADOS.PARADO;
             progressoSubida = 0;
             progressoQueda = 0;
             velSubida = 0;
             velQueda = 0;
             pedrasCaindo.length = 0;
             placarEl.textContent = `Montanhas: ${montanhas}`;
+            sliderRelativeX = 0.5;
+            characterOffsetX = 0;
+            updateSliderHandlePosition(sliderRelativeX);
             atualizarRanking();
         }
 
@@ -738,13 +748,7 @@
             sliderRelativeX = 0.5;
             characterOffsetX = 0;
             updateSliderHandlePosition(sliderRelativeX);
-            // Corrigido: A caixa só abre se o score for maior que 0
-            if (scoreAtual > 0) {
-                mostrarCaixaNome(scoreAtual);
-            } else {
-                // Se o score for 0, apenas reseta o jogo
-                resetarJogoAposGameOver();
-            }
+            mostrarCaixaNome(scoreAtual);
         }
 
         // --------------------------
@@ -755,6 +759,7 @@
 
             ctx.save();
             if (darkModeAtivo) {
+                // Ajustado para ficar mais claro
                 ctx.filter = 'brightness(0.6) contrast(1.1) grayscale(0.2)'; 
             } else {
                 ctx.filter = 'none';
@@ -882,18 +887,6 @@
 
         function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
         function safeNumber(v, fallback = 0) { const n = Number(v); return Number.isNaN(n) ? fallback : n; }
-
-        let tapped = false;
-        function handleStartEvent() {
-            if (!tapped) {
-                tapped = true;
-            }
-            if (estado === ESTADOS.PARADO) {
-                 iniciarCiclo();
-            }
-        }
-        window.addEventListener('touchstart', handleStartEvent, { passive: true });
-        window.addEventListener('mousedown', handleStartEvent, { passive: true });
     </script>
 </body>
 </html>
