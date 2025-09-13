@@ -406,12 +406,16 @@
       velQueda = 0;
       movimentoAtivo = true;
 
+      // dimensões do Sísifo
       const sisW = canvas.width * 0.12;
       const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
+
+      // pega posição inicial do personagem na subida
       const pInicial = cubicBezierPoint(0, ...curvaSubida);
       const sx = pInicial.x - sisW / 2;
       const sy = pInicial.y - sisH;
 
+      // gera pedra inicial garantindo que não nasça sobre o personagem
       // gera pedra inicial garantindo zona de exclusão
       gerarPedraCaindo(undefined, PEDRA_CAI_W, sx, sy, sisW, sisH);
     }
@@ -420,42 +424,24 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo(posX, larguraPedra, xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
+      const margemSegura = wPersonagem * 1.5; // evita nascer perto do personagem
+      // Limita a quantidade de pedras
       if (pedrasCaindo.length >= 3) return;
-    function gerarPedraCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
-      if (pedrasCaindo.length >= 3) return; // Limite de 3 pedras
 
-      const raioExclusao = Math.max(wPersonagem, hPersonagem) * 2; // raio do círculo de exclusão
-      const raioExclusao = Math.max(wPersonagem, hPersonagem) * 2; // raio ao redor do personagem
-      const cxPersonagem = xPersonagem + wPersonagem / 2;
-      const cyPersonagem = yPersonagem + hPersonagem / 2;
+      // Zona de exclusão aumentada
+      const margemSegura = wPersonagem * 3; // aumentei para 3x a largura do personagem
+      let x;
 
-      let x, y;
-      do {
-      const maxTentativas = 50;
-      let tentativa = 0;
-      let achouPosicao = false;
-
-      while (tentativa < maxTentativas && !achouPosicao) {
-        x = Math.random() * (canvas.width - PEDRA_CAI_W);
-        y = -PEDRA_CAI_H; // topo da tela
-        const cxPedra = x + (larguraPedra || PEDRA_CAI_W) / 2;
-        const cyPedra = y + (larguraPedra || PEDRA_CAI_H) / 2;
-        y = -PEDRA_CAI_H - Math.random() * canvas.height * 0.2; // acima do topo, aleatório
-
-        const cxPedra = x + PEDRA_CAI_W / 2;
-        const cyPedra = y + PEDRA_CAI_H / 2;
-        const dx = cxPedra - cxPersonagem;
-        const dy = cyPedra - cyPersonagem;
-        var distancia = Math.sqrt(dx * dx + dy * dy);
-      } while (distancia < raioExclusao);
-        const distancia = Math.sqrt(dx * dx + dy * dy);
-
-        if (distancia >= raioExclusao) achouPosicao = true;
-        tentativa++;
+      if (posX !== undefined) {
+        x = posX;
+      } else {
+        // sorteia até ficar fora da área do personagem
+        do {
+          x = Math.random() * (canvas.width - PEDRA_CAI_W);
+        } while (x > xPersonagem - margemSegura && x < xPersonagem + wPersonagem + margemSegura);
       }
 
-      if (!achouPosicao) return; // não cria pedra se não achar posição segura
-
+      const y = -PEDRA_CAI_H; // sempre acima do topo
       const velocidade = 2 + Math.random() * 3;
 
       pedrasCaindo.push({
@@ -464,10 +450,12 @@
         velocidade,
         width: larguraPedra || PEDRA_CAI_W,
         height: larguraPedra ? larguraPedra * (IMG_PEDRA.height / IMG_PEDRA.width || 1) : PEDRA_CAI_H
-        width: PEDRA_CAI_W,
-        height: PEDRA_CAI_H
       });
     }
+
+
+
+
 
 
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
