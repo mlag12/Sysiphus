@@ -402,19 +402,25 @@
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
     function gerarPedraCaindo() {
-  // Define a faixa horizontal onde as pedras podem surgir.
-  // Atualmente, elas podem aparecer em qualquer posição horizontalmente.
-  const x = Math.random() * (canvas.width - PEDRA_CAI_W);
+      let x;
+      // Define duas faixas onde as pedras podem cair: início e fim da tela
+      const faixaEsquerda = canvas.width * 0.1;
+      const faixaDireita = canvas.width * 0.9;
+      const larguraFaixa = canvas.width * 0.15; // Largura para cair dentro de cada faixa
 
-  // Certifique-se de que a pedra comece FORA da tela, acima do topo.
-  const y = -PEDRA_CAI_H; // Define a posição Y para começar acima do topo visível.
+      if (Math.random() < 0.5) { // 50% de chance de cair na faixa esquerda
+        x = Math.random() * larguraFaixa;
+      } else { // 50% de chance de cair na faixa direita
+        x = faixaDireita + Math.random() * larguraFaixa;
+      }
 
-  // Velocidade da pedra caindo (entre 2 e 5 unidades por frame).
-  const velocidade = 2 + Math.random() * 3;
+      // Garante que X não ultrapasse os limites da tela
+      x = Math.max(0, Math.min(x, canvas.width - PEDRA_CAI_W));
 
-  // Adiciona a nova pedra à lista de pedras caindo.
-  pedrasCaindo.push({ x, y, velocidade });
-}
+      const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
+      const velocidade = 2 + Math.random() * 3;
+      pedrasCaindo.push({ x, y, velocidade });
+    }
 
 
 
