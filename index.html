@@ -408,31 +408,41 @@
       pedrasCaindo.push({ x, y, velocidade });
     }
 
-    function atualizarPedrasCaindo(sx, sy, pedW, pedH) {
+    function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
       for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
-        const p = pedrasCaindo[i];
-        p.y += p.velocidade;
+        const ped = pedrasCaindo[i];
+        ped.y += ped.velocidade;
 
-        // colisão com personagem ou pedra
+        // desenhar pedra
+        if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, ped.x, ped.y, PEDRA_CAI_W, PEDRA_CAI_H);
+
+        // checar colisão com personagem ou pedra dele
         if (
-          p.x + PEDRA_CAI_W > sx && p.x < sx + pedW &&
-          p.y + PEDRA_CAI_H > sy && p.y < sy + pedH
+          ped.x < xPersonagem + wPersonagem &&
+          ped.x + PEDRA_CAI_W > xPersonagem &&
+          ped.y < yPersonagem + hPersonagem &&
+          ped.y + PEDRA_CAI_H > yPersonagem
         ) {
-          // resetar progresso e score
+          // colisão detectada
+          pedrasCaindo.splice(i, 1); // remove pedra
+
+          // fim de jogo: tenta salvar se pontuação suficiente
+          if (montanhas > 0) {
+            fimDoJogoSuicidio(); // usa a função já existente que pede nome e tenta salvar
+          }
+
+          // reinicia score
           montanhas = 0;
           progressoSubida = progressoQueda = 0;
           velSubida = velQueda = 0;
-          pedrasCaindo.length = 0; // limpa todas
-          return;
+          return; // sai da função para não processar mais pedras neste frame
         }
 
-        // remove pedra se saiu da tela
-        if (p.y > canvas.height) pedrasCaindo.splice(i, 1);
-        else {
-          if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, p.x, p.y, PEDRA_CAI_W, PEDRA_CAI_H);
-        }
+        // remover se saiu da tela
+        if (ped.y > canvas.height) pedrasCaindo.splice(i, 1);
       }
     }
+
 
 
     // --------------------------
@@ -640,19 +650,25 @@
         }
 
         if (estado === ESTADOS.SUBINDO) {
-          // chance de gerar pedra
-          if (Math.random() < freqQueda) gerarPedraCaindo();
+          // gerar pedras com baixa frequência
+          if (Math.random() < freqQueda) {
+            const s = pSis;
+            const sx = s.x - sisW / 2;
+            const pedX = sx + sisW * 0.4;
+            gerarPedraCaindo(pedX, pedW);
+          }
 
-          // posição do personagem e da pedra
           const s = pSis;
           const sx = s.x - sisW / 2;
           const sy = s.y - sisH + (canvas.height * 0.01);
           const pedX = sx + sisW * 0.4;
           const pedY = sy - pedH * 0.7;
 
-          atualizarPedrasCaindo(sx, sy, sisW, sisH); // colisão personagem
-          atualizarPedrasCaindo(pedX, pedY, pedW, pedH); // colisão pedra
+          // atualiza colisões e desenha pedras
+          atualizarPedrasCaindo(sx, sy, sisW, sisH);  // personagem
+          atualizarPedrasCaindo(pedX, pedY, pedW, pedH); // pedra que ele carrega
         }
+
 
 
         if (estado === ESTADOS.QUEDA) {
