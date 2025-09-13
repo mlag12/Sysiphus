@@ -25,8 +25,6 @@
       background: #000;
       color: #fff;
       font-family: "Courier New", monospace;
-      overflow: hidden;
-      /* Evita barras de rolagem */
     }
 
     /* canvas full screen */
@@ -57,52 +55,58 @@
       white-space: nowrap;
     }
 
-    /* --- Joystick Estilizado (Adaptado para Mobile) --- */
-    #joystick-container {
+    #botao-container {
       position: fixed;
-      bottom: 5%; /* Ajustado para ficar mais acessível */
+      bottom: 3%;
       left: 50%;
       transform: translateX(-50%);
       z-index: 120;
       pointer-events: auto;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      /* Empilha os botões em telas menores */
       align-items: center;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 15px; /* Bordas mais arredondadas */
-      padding: 10px; /* Padding menor */
-      border: 2px dashed var(--neon); /* Borda mais fina */
-      width: 180px; /* Largura menor para o container */
-      height: 70px; /* Altura menor para o container */
+      gap: 16px;
+      /* Aumenta o espaço entre os botões */
     }
 
-    #joystick-base {
-      width: 100%;
-      height: 15px; /* Altura da "trilha" reduzida */
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      cursor: grab;
-    }
-
-    #joystick-thumb {
-      width: 45px; /* Largura do "pauzinho" reduzida */
-      height: 45px; /* Altura do "pauzinho" reduzida */
+    #botao-container button {
+      display: block;
+      margin: 0;
+      /* Aumenta o padding para uma área de toque maior */
+      padding: 2.5vh 8vw;
+      border-radius: 15px;
+      /* Cantos mais arredondados */
+      border: 4px solid var(--btn-border);
       background: var(--btn-bg);
-      border: 3px solid var(--btn-border); /* Borda mais fina */
-      border-radius: 50%;
-      position: absolute;
-      cursor: grab;
-      transition: none; /* Remove transição para controle mais responsivo */
-      box-shadow: 0 0 10px rgba(255, 0, 77, 0.7);
-      transform: translateX(-50%); /* Ajuste para o centro do thumb */
-      left: 50%; /* Posição inicial central */
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 2px;
+      cursor: pointer;
+      /* Aumenta a fonte para melhor legibilidade */
+      font-size: 5vw;
+      min-width: 200px;
+      /* Garante uma largura mínima */
+      text-align: center;
     }
 
-    /* --- Fim do Joystick Estilizado --- */
+    /* Ajuste para telas mais largas */
+    @media (min-width: 600px) {
+      #botao-container {
+        flex-direction: row;
+        /* Coloca os botões lado a lado em telas maiores */
+        gap: 30px;
+        /* Mais espaço horizontal entre botões */
+      }
 
+      #botao-container button {
+        font-size: 20px;
+        /* Tamanho de fonte fixo para telas maiores */
+        padding: 1.5vh 4vw;
+        /* Ajusta padding para telas maiores */
+        min-width: 160px;
+      }
+    }
 
     #menu-container {
       position: fixed;
@@ -118,10 +122,10 @@
 
     #botao-menu {
       cursor: pointer;
-      font-size: 14px; /* Fonte menor */
+      font-size: 16px;
       background: var(--btn-bg);
       border: 2px solid #000;
-      padding: 5px 10px; /* Padding menor */
+      padding: 6px 10px;
       border-radius: 8px;
     }
 
@@ -144,10 +148,11 @@
       justify-content: flex-end;
       gap: 8px;
       cursor: pointer;
-      font-size: 13px; /* Fonte menor */
+      font-size: 15px;
       background: var(--btn-bg);
       border: 2px solid #000;
-      padding: 6px 10px; /* Padding menor */
+      padding: 8px 12px;
+      /* Aumenta padding */
       border-radius: 8px;
       white-space: nowrap;
     }
@@ -164,30 +169,34 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(2deg);
-      padding: 4vh 6vw; /* Padding um pouco menor */
+      padding: 5vh 8vw;
+      /* diminui o padding horizontal para mais espaço interno */
       background: rgba(0, 0, 0, 0.95);
-      border: 3px dashed red; /* Borda mais fina */
+      border: 4px dashed red;
       color: white;
       font-family: "Courier New", monospace;
-      font-size: 3vh; /* Tamanho de fonte menor */
+      font-size: 3.5vh;
       text-align: center;
       z-index: 1000;
-      max-height: 65vh; /* Altura máxima menor */
+      max-height: 70vh;
       overflow-y: auto;
-      min-width: 350px; /* Largura mínima menor */
+      min-width: 400px;
+      /* aumenta a largura mínima */
       width: auto;
+      /* deixa a largura se ajustar ao conteúdo */
       white-space: nowrap;
+      /* impede quebras de linha */
     }
 
 
     #ranking-absurdo h1 {
       font-family: Impact, fantasy;
-      font-size: 5vh; /* Tamanho de fonte menor */
+      font-size: 6vh;
       color: var(--accent);
       text-shadow: 2px 2px 6px rgba(255, 0, 77, 0.5);
-      margin-bottom: 1.5vh;
+      margin-bottom: 2vh;
       border-bottom: 2px dashed yellow;
-      padding-bottom: 0.8vh;
+      padding-bottom: 1vh;
     }
 
     #ranking-list {
@@ -197,7 +206,7 @@
     }
 
     #ranking-list li {
-      margin-bottom: 1vh; /* Margem menor */
+      margin-bottom: 1.2vh;
       color: var(--neon);
       font-weight: bold;
       text-shadow: 1px 1px 3px rgba(0, 255, 255, 0.4);
@@ -209,40 +218,41 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(-5deg);
-      padding: 4vh 6vw; /* Padding menor */
+      /* Aumenta o padding e a fonte para melhor experiência mobile */
+      padding: 5vh 8vw;
       background: linear-gradient(45deg, #ff00ff, #00ffff);
-      border: 3px dashed yellow; /* Borda mais fina */
+      border: 4px dashed yellow;
       color: white;
       font-family: "Courier New", monospace;
-      font-size: 3.5vh; /* Tamanho de fonte menor */
+      font-size: 4.5vh;
       text-align: center;
       z-index: 999;
     }
 
     .caixa-nome p {
-      line-height: 1.4; /* Espaçamento menor */
+      line-height: 1.5;
+      /* Melhora o espaçamento entre linhas */
     }
 
     .caixa-nome input {
-      font-size: 2.5vh; /* Tamanho de fonte menor */
-      padding: 10px; /* Padding menor */
+      font-size: 3vh;
+      /* Aumenta o tamanho da fonte do input */
+      padding: 12px;
+      /* Aumenta o padding do input */
       width: 100%;
+      /* Garante que o input ocupe a largura disponível */
       border-radius: 8px;
       border: 2px solid #000;
-      margin-top: 8px; /* Margem menor */
+      margin-top: 10px;
     }
 
     .caixa-nome button {
-      margin-top: 12px; /* Margem menor */
-      font-size: 2.4vh; /* Tamanho de fonte menor */
-      padding: 8px 15px; /* Padding menor */
+      margin-top: 16px;
+      /* Aumenta margem superior */
+      font-size: 2.8vh;
+      padding: 10px 20px;
       border-radius: 10px;
       cursor: pointer;
-    }
-
-    /* Oculta o botão antigo de empurrar */
-    #botao-empurrar {
-      display: none;
     }
   </style>
 </head>
@@ -253,16 +263,16 @@
   <div id="ui">
     <div id="placar">Montanhas: 0</div>
 
-    <div id="joystick-container">
-      <div id="joystick-base">
-        <div id="joystick-thumb"></div>
-      </div>
+    <div id="botao-container">
+      <button id="botao-empurrar">Empurrar</button>
     </div>
+
     <div id="menu-container">
       <button id="botao-menu">Menu</button>
       <div id="menu-itens">
         <button id="botao-ranking">Ranking</button>
-        <label><input type="checkbox" id="mostrar-score"> Mostrar Score</label>
+        <label><input type="checkbox" id="mostrar-score"> Mostrar
+          Score</label>
       </div>
     </div>
 
@@ -312,11 +322,7 @@
     const ctx = canvas.getContext('2d');
     const placarEl = document.getElementById('placar');
 
-    // Joystick Elements
-    const joystickContainer = document.getElementById('joystick-container');
-    const joystickThumb = document.getElementById('joystick-thumb');
-    const joystickBase = document.getElementById('joystick-base');
-
+    const botaoEmpurrar = document.getElementById('botao-empurrar');
     const botaoMenu = document.getElementById('botao-menu');
     const menuContainer = document.getElementById('menu-container');
     const botaoRanking = document.getElementById('botao-ranking');
@@ -340,12 +346,6 @@
     let movimentoAtivo = false;
     let mostrarScore = false;
 
-    // Variáveis para controle horizontal do personagem
-    let movimentoHorizontal = 0; // Valor entre -1 e 1, representando a direção e intensidade do joystick
-    let personagemOffsetX = 0; // Deslocamento horizontal do personagem em pixels
-    const maxPersonagemOffsetX = 0.25 * canvas.width; // Desvio máximo horizontal (25% da tela) - Aumentado um pouco
-    const sensibilidadePersonagem = 0.007; // Ajusta a velocidade com que o personagem responde ao joystick
-
     checkbox.addEventListener('change', () => { mostrarScore = checkbox.checked; });
     botaoMenu.addEventListener('click', () => menuContainer.classList.toggle('open'));
 
@@ -367,98 +367,26 @@
     // --- resize canvas & curves ---
     const curvaSubidaPct = [{ x: 0.15, y: 0.65 }, { x: 0.25, y: 0.40 }, { x: 0.40, y: 0.40 }, { x: 0.60, y: 0.40 }];
     const curvaQuedaPct = [{ x: 0.70, y: 0.40 }, { x: 0.75, y: 0.55 }, { x: 0.90, y: 0.65 }, { x: 0.99, y: 0.75 }];
-    let curvaSubidaBasePx, curvaQuedaPx; // Armazenar as curvas em pixels
-    let curvaSubidaBasePct = JSON.parse(JSON.stringify(curvaSubidaPct)); // Cópia da curva base em percentual
+    let curvaSubida, curvaQueda;
 
     function pctToPx(curva) { return curva.map(p => ({ x: p.x * canvas.width, y: p.y * canvas.height })); }
 
     function resize() {
       canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-      curvaSubidaBasePx = pctToPx(curvaSubidaBasePct); // Converte a curva base para pixels
-      curvaQuedaPx = pctToPx(curvaQuedaPct);
+      curvaSubida = pctToPx(curvaSubidaPct); curvaQueda = pctToPx(curvaQuedaPct);
     }
     window.addEventListener('resize', resize); resize();
 
-    // --- Joystick Logic ---
-    let joystickThumbCenterX = 0; // Posição X relativa do centro do thumb dentro da base
-    let isDragging = false;
+    // --- controles ---
+    function pressionar() { if (estado === ESTADOS.PARADO) iniciarCiclo(); else if (estado === ESTADOS.SUBINDO) movimentoAtivo = true; }
+    function soltar() { movimentoAtivo = false; }
 
-    function updateJoystickPosition(clientX) {
-      const rectBase = joystickBase.getBoundingClientRect();
-      const thumbWidth = joystickThumb.offsetWidth;
+    botaoEmpurrar.addEventListener('mousedown', e => { e.preventDefault(); pressionar(); });
+    botaoEmpurrar.addEventListener('touchstart', e => { e.preventDefault(); pressionar(); }, { passive: false });
+    botaoEmpurrar.addEventListener('mouseup', soltar);
+    botaoEmpurrar.addEventListener('touchend', soltar, { passive: false });
 
-      // Calcula a posição do mouse/toque relativa ao *centro da base* do joystick
-      let deltaX = clientX - rectBase.left - rectBase.width / 2;
-
-      // Limita o movimento do centro do thumb para que ele não saia da base
-      const maxDeltaX = (rectBase.width - thumbWidth) / 2;
-      deltaX = clamp(deltaX, -maxDeltaX, maxDeltaX);
-
-      joystickThumbCenterX = deltaX; // Atualiza a posição X relativa do thumb
-
-      // Aplica a posição ao thumb do joystick. O left: 50% já centraliza, então adicionamos deltaX.
-      joystickThumb.style.left = `calc(50% + ${joystickThumbCenterX}px)`;
-
-      // Normaliza o movimento horizontal para um valor entre -1 e 1
-      const normalizedMovement = joystickThumbCenterX / maxDeltaX;
-
-      // Determina o valor de movimentoHorizontal após aplicar a dead zone
-      const deadZoneFactor = 0.15; // 15% de dead zone no joystick
-      if (Math.abs(normalizedMovement) > deadZoneFactor) {
-        movimentoHorizontal = Math.sign(normalizedMovement) *
-                           ((Math.abs(normalizedMovement) - deadZoneFactor) / (1 - deadZoneFactor));
-        movimentoAtivo = true;
-      } else {
-        movimentoHorizontal = 0; // Dentro da dead zone, o personagem para
-        movimentoAtivo = false;
-      }
-
-      // Se o jogo está parado, e houve movimento do joystick, iniciar ciclo
-      // O personagem só começa a subir se houver um comando claro (não na dead zone)
-      if (estado === ESTADOS.PARADO && movimentoHorizontal !== 0) {
-        iniciarCiclo();
-      }
-    }
-
-    function onPointerDown(e) {
-      e.preventDefault();
-      isDragging = true;
-      joystickThumb.style.cursor = 'grabbing';
-      document.body.style.cursor = 'grabbing';
-      updateJoystickPosition(e.clientX);
-    }
-
-    function onPointerMove(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      updateJoystickPosition(e.clientX);
-    }
-
-    function onPointerUp(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      isDragging = false;
-      joystickThumb.style.cursor = 'grab';
-      document.body.style.cursor = 'default';
-
-      // Retorna o joystick ao centro quando solto
-      joystickThumb.style.left = '50%'; // Volta para a posição inicial via CSS
-      joystickThumbCenterX = 0;
-      movimentoHorizontal = 0; // Para o movimento horizontal
-      movimentoAtivo = false;
-    }
-
-    // Event listeners para o joystick
-    joystickContainer.addEventListener('pointerdown', onPointerDown);
-    joystickBase.addEventListener('pointerdown', onPointerDown); // Permite arrastar da base também
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointerleave', onPointerUp);
-
-    // --- Fim do Joystick Logic ---
-
-
-    // --- physics ---
+    // --- movimento / física ---
     function cubicBezierPoint(t, p0, p1, p2, p3) {
       const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
       const a = lerp(p0, p1, t), b = lerp(p1, p2, t), c = lerp(p2, p3, t);
@@ -470,46 +398,57 @@
     let maxVelSubida = 0.01, aceleracaoSubida = 0.003, desaceleraSubida = 0.9;
     let aceleracaoQuedaInit = 0.008, gravidadeQueda = 0.0002, pausaFrames = 0;
 
-    function iniciarCiclo() {
-      estado = ESTADOS.SUBINDO;
-      progressoSubida = 0;
-      velSubida = 0.005; // Velocidade inicial ao começar
-      progressoQueda = 0;
-      velQueda = 0;
-      personagemOffsetX = 0; // Reseta o offset ao iniciar um novo ciclo
-    }
+    function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
+    function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
 
-    function reiniciarParaParado() {
-      montanhas++;
-      estado = ESTADOS.PARADO;
-      progressoSubida = progressoQueda = 0;
-      velSubida = velQueda = 0;
-      movimentoAtivo = false;
-      movimentoHorizontal = 0; // Zera o movimento horizontal
-      personagemOffsetX = 0; // Zera o offset horizontal
-    }
+    function gerarPedraCaindo() {
+  let x;
+  // Define duas faixas onde as pedras podem cair: início e fim da tela
+  const faixaEsquerda = canvas.width * 0.1;
+  const faixaDireita = canvas.width * 0.9;
+  const larguraFaixa = canvas.width * 0.15; // Largura para cair dentro de cada faixa
 
+  if (Math.random() < 0.5) { // 50% de chance de cair na faixa esquerda
+    x = Math.random() * larguraFaixa;
+  } else { // 50% de chance de cair na faixa direita
+    x = faixaDireita + Math.random() * larguraFaixa;
+  }
 
-    function gerarPedraCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
-      let x, y = -PEDRA_CAI_H;
-      const zonaExclusaoRaio = Math.max(wPersonagem, hPersonagem) * 2; // raio da zona de exclusão ao redor do personagem
+  // Garante que X não ultrapasse os limites da tela
+  x = Math.max(0, Math.min(x, canvas.width - PEDRA_CAI_W));
 
-      let tentativas = 0;
+  const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
+  const velocidade = 2 + Math.random() * 3;
+  pedrasCaindo.push({ x, y, velocidade });
+}
+    function gerarPedraCaindo(xPersonagem, wPersonagem) {
+      let x;
+      const zonaExclusao = canvas.width * 0.2; // Define uma zona de exclusão de 20% da largura da tela ao redor do personagem
+
+      // Loop para garantir que a pedra não nasça muito perto
       do {
-        x = Math.random() * (canvas.width - PEDRA_CAI_W); // posição aleatória no topo
-        y = -PEDRA_CAI_H; // sempre acima do topo da tela
-        tentativas++;
-        if (tentativas > 100) break; // evita loop infinito caso zona cubra muito
-      } while (
-        Math.hypot(
-          x + PEDRA_CAI_W / 2 - (xPersonagem + wPersonagem / 2),
-          y + PEDRA_CAI_H / 2 - (yPersonagem + hPersonagem / 2)
-        ) < zonaExclusaoRaio
-      );
+        // Define duas faixas onde as pedras podem cair: início e fim da tela
+        const faixaEsquerda = canvas.width * 0.1;
+        const faixaDireita = canvas.width * 0.9;
+        const larguraFaixa = canvas.width * 0.15; // Largura para cair dentro de cada faixa
 
+        if (Math.random() < 0.5) { // 50% de chance de cair na faixa esquerda
+          x = Math.random() * larguraFaixa;
+        } else { // 50% de chance de cair na faixa direita
+          x = faixaDireita + Math.random() * larguraFaixa;
+        }
+
+        // Garante que X não ultrapasse os limites da tela
+        x = Math.max(0, Math.min(x, canvas.width - PEDRA_CAI_W));
+
+      } while (Math.abs(x - (xPersonagem + wPersonagem / 2)) < zonaExclusao); // Condição para repetir a geração
+
+      const y = -PEDRA_CAI_H; // Sempre começa acima do topo da tela
       const velocidade = 2 + Math.random() * 3;
       pedrasCaindo.push({ x, y, velocidade });
     }
+
+
 
 
     function atualizarPedrasCaindo(xPersonagem, yPersonagem, wPersonagem, hPersonagem) {
@@ -637,8 +576,6 @@
       // Pausa o jogo
       estado = ESTADOS.PARADO;
       movimentoAtivo = false;
-      movimentoHorizontal = 0; // Zera o movimento horizontal
-      personagemOffsetX = 0; // Zera o offset horizontal
 
       // Cria a caixa de input
       const caixaNome = document.createElement('div');
@@ -651,7 +588,7 @@
             <button id="salvar-absurdo">Salvar</button>
             <button id="cancelar-absurdo" style="margin-left:10px;">Cancelar</button>
         </div>
-      `;
+    `;
       document.body.appendChild(caixaNome);
 
       // Botão Salvar
@@ -720,64 +657,26 @@
 
       // lógica de estados
       if (estado === ESTADOS.SUBINDO) {
-        // Movimento vertical (subida) é sempre para frente (aumenta progressoSubida)
-        velSubida = 0.005 + Math.abs(movimentoHorizontal) * 0.005; // Acelera um pouco mais ao desviar
-        velSubida = Math.min(velSubida, maxVelSubida);
+        if (movimentoAtivo) { velSubida += aceleracaoSubida; if (velSubida > maxVelSubida) velSubida = maxVelSubida; }
+        else { velSubida *= desaceleraSubida; if (velSubida < 0.0001) velSubida = 0; }
         progressoSubida += velSubida;
-
-        // Atualiza o deslocamento horizontal do personagem APENAS se houver comando ativo
-        if (movimentoHorizontal !== 0) {
-          personagemOffsetX += movimentoHorizontal * sensibilidadePersonagem * canvas.width;
-          personagemOffsetX = clamp(personagemOffsetX, -maxPersonagemOffsetX, maxPersonagemOffsetX);
-        } else {
-          // Se não há comando, o personagem tende a retornar ao centro suavemente
-          // O movimento para trás (esquerda) só acontece se arrastar para a esquerda explicitamente.
-          // Para retornar ao centro:
-          personagemOffsetX *= 0.95; // Suaviza o retorno ao centro
-          if (Math.abs(personagemOffsetX) < 1) personagemOffsetX = 0; // Zera se estiver muito perto
-        }
-
-
-        if (progressoSubida >= 1) {
-          progressoSubida = 1;
-          estado = ESTADOS.PAUSA;
-          pausaFrames = 15;
-          progressoQueda = 0;
-          velQueda = aceleracaoQuedaInit;
-        }
-      } else if (estado === ESTADOS.PAUSA) {
-        pausaFrames--;
-        if (pausaFrames <= 0) estado = ESTADOS.QUEDA;
-      } else if (estado === ESTADOS.QUEDA) {
-        velQueda += gravidadeQueda;
-        progressoQueda += velQueda;
-        if (progressoQueda >= 1) {
-          reiniciarParaParado();
-        }
-      } else if (estado === ESTADOS.SUICIDIO) {
-        velQueda += gravidadeQueda;
-        progressoQueda += velQueda;
-        if (progressoQueda >= 1) {
-          estado = ESTADOS.PARADO;
-          fimDoJogoSuicidio();
-        }
-      }
+        if (progressoSubida >= 1) { progressoSubida = 1; estado = ESTADOS.PAUSA; pausaFrames = 15; progressoQueda = 0; velQueda = aceleracaoQuedaInit; }
+      } else if (estado === ESTADOS.PAUSA) { pausaFrames--; if (pausaFrames <= 0) estado = ESTADOS.QUEDA; }
+      else if (estado === ESTADOS.QUEDA) { velQueda += gravidadeQueda; progressoQueda += velQueda; if (progressoQueda >= 1) { reiniciarParaParado(); } }
+      else if (estado === ESTADOS.SUICIDIO) { velQueda += gravidadeQueda; progressoQueda += velQueda; if (progressoQueda >= 1) { estado = ESTADOS.PARADO; fimDoJogoSuicidio(); } }
 
       // limpar
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       desenharFundo();
 
       // calcular posições via bezier
-      const pSisBase = cubicBezierPoint(progressoSubida, ...curvaSubidaBasePx); // Ponto na curva original (para Y)
-      const pQueda = cubicBezierPoint(progressoQueda, ...curvaQuedaPx);
+      const pSis = cubicBezierPoint(progressoSubida, ...curvaSubida);
+      const pQueda = cubicBezierPoint(progressoQueda, ...curvaQueda);
 
-      // dimensões relativas
-      const sisW = canvas.width * 0.12;
-      const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
-      const pedW = sisW * 0.7;
-      const pedH = pedW;
+      // dimensões relativos
+      const sisW = canvas.width * 0.12; const sisH = sisW * (IMG_SISIFO.height / IMG_SISIFO.width || 1);
+      const pedW = sisW * 0.7; const pedH = pedW;
 
-      // --- Desenho do Sísifo com Desvio Horizontal ---
       if (estado === ESTADOS.SUICIDIO) {
         const q = pQueda;
         const sisDesvio = Math.sin(progressoQueda * Math.PI * 0.5) * (canvas.width * 0.04);
@@ -790,29 +689,28 @@
 
       } else {
         // subida/pause/queda regular
-        // A posição X do Sísifo agora é a posição da curva base + o offset de desvio
-        let sx = pSisBase.x - sisW / 2 + personagemOffsetX;
-        const sy = pSisBase.y - sisH + (canvas.height * 0.01);
-
-        // Garante que Sísifo não saia da tela
-        sx = Math.max(0, Math.min(canvas.width - sisW, sx));
-
+        const s = pSis;
+        const sx = s.x - sisW / 2; const sy = s.y - sisH + (canvas.height * 0.01);
         if (IMG_SISIFO.complete) ctx.drawImage(IMG_SISIFO, sx, sy, sisW, sisH);
 
         if (estado === ESTADOS.SUBINDO || estado === ESTADOS.PAUSA) {
-          const px = sx + sisW * 0.4;
-          const py = sy - pedH * 0.7;
+          const px = sx + sisW * 0.4; const py = sy - pedH * 0.7;
           if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, px, py, pedW, pedH);
         }
 
         if (estado === ESTADOS.SUBINDO) {
           // gerar pedras com baixa frequência
           if (Math.random() < freqQueda) {
-            const pedX = sx + sisW * 0.4; // Posição X da pedra baseada na posição atual de Sísifo
-            gerarPedraCaindo(pedX, sy, pedW, pedH);
+            const s = pSis;
+            const sx = s.x - sisW / 2;
+            const pedX = sx + sisW * 0.4;
+            gerarPedraCaindo(pedX, pedW);
           }
 
-          const pedX = sx + sisW * 0.4; // Posição X da pedra baseada na posição atual de Sísifo
+          const s = pSis;
+          const sx = s.x - sisW / 2;
+          const sy = s.y - sisH + (canvas.height * 0.01);
+          const pedX = sx + sisW * 0.4;
           const pedY = sy - pedH * 0.7;
 
           // atualiza colisões e desenha pedras
@@ -822,8 +720,7 @@
 
         if (estado === ESTADOS.QUEDA) {
           const q = pQueda;
-          const px = q.x - pedW / 2;
-          const py = q.y - pedH / 2;
+          const px = q.x - pedW / 2; const py = q.y - pedH / 2;
           ctx.save(); ctx.translate(px + pedW / 2, py + pedH / 2); ctx.rotate(progressoQueda * Math.PI * 3.6); if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, -pedW / 2, -pedH / 2, pedW, pedH); ctx.restore();
         }
       }
@@ -857,6 +754,7 @@
     let tapped = false;
     function handleStartEvent() { if (!tapped) { tapped = true; /* futuro: desbloquear áudio */ } }
     window.addEventListener('touchstart', handleStartEvent, { passive: true });
+
   </script>
 </body>
 
