@@ -272,7 +272,8 @@
       <button id="botao-menu">Menu</button>
       <div id="menu-itens">
         <button id="botao-ranking">Ranking</button>
-        <label><input type="checkbox" id="mostrar-score"> Mostrar Score</label>
+        <label><input type="checkbox" id="mostrar-score"> Mostrar
+          Score</label>
       </div>
     </div>
 
@@ -356,6 +357,15 @@
       if (!isShown) atualizarRanking();
     });
 
+    // --------------------------
+    // novas pedras caindo durante subida
+    // --------------------------
+    const pedrasCaindo = [];
+    const PEDRA_CAI_W = 80; // largura padrão
+    const PEDRA_CAI_H = 80; // altura padrão
+    const freqQueda = 0.01; // chance de gerar pedra a cada frame (0-1)
+
+
     // --- resize canvas & curves ---
     const curvaSubidaPct = [{ x: 0.15, y: 0.65 }, { x: 0.25, y: 0.40 }, { x: 0.40, y: 0.40 }, { x: 0.60, y: 0.40 }];
     const curvaQuedaPct = [{ x: 0.70, y: 0.40 }, { x: 0.75, y: 0.55 }, { x: 0.90, y: 0.65 }, { x: 0.99, y: 0.75 }];
@@ -396,6 +406,40 @@
 
     function iniciarCiclo() { estado = ESTADOS.SUBINDO; progressoSubida = 0; velSubida = 0.005; progressoQueda = 0; velQueda = 0; movimentoAtivo = true; }
     function reiniciarParaParado() { montanhas++; estado = ESTADOS.PARADO; progressoSubida = progressoQueda = 0; velSubida = velQueda = 0; movimentoAtivo = false; }
+
+    function gerarPedraCaindo() {
+      const x = Math.random() * (canvas.width - PEDRA_CAI_W);
+      const y = -PEDRA_CAI_H; // começa acima da tela
+      const velocidade = 2 + Math.random() * 3; // velocidade aleatória
+      pedrasCaindo.push({ x, y, velocidade });
+    }
+
+    function atualizarPedrasCaindo(sx, sy, pedW, pedH) {
+      for (let i = pedrasCaindo.length - 1; i >= 0; i--) {
+        const p = pedrasCaindo[i];
+        p.y += p.velocidade;
+
+        // colisão com personagem ou pedra
+        if (
+          p.x + PEDRA_CAI_W > sx && p.x < sx + pedW &&
+          p.y + PEDRA_CAI_H > sy && p.y < sy + pedH
+        ) {
+          // resetar progresso e score
+          montanhas = 0;
+          progressoSubida = progressoQueda = 0;
+          velSubida = velQueda = 0;
+          pedrasCaindo.length = 0; // limpa todas
+          return;
+        }
+
+        // remove pedra se saiu da tela
+        if (p.y > canvas.height) pedrasCaindo.splice(i, 1);
+        else {
+          if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, p.x, p.y, PEDRA_CAI_W, PEDRA_CAI_H);
+        }
+      }
+    }
+
 
     // --------------------------
     // FIREBASE: salvar apenas se entra no top10
@@ -600,6 +644,22 @@
           const px = sx + sisW * 0.4; const py = sy - pedH * 0.7;
           if (IMG_PEDRA.complete) ctx.drawImage(IMG_PEDRA, px, py, pedW, pedH);
         }
+
+        if (estado === ESTADOS.SUBINDO) {
+          // chance de gerar pedra
+          if (Math.random() < freqQueda) gerarPedraCaindo();
+
+          // posição do personagem e da pedra
+          const s = pSis;
+          const sx = s.x - sisW / 2;
+          const sy = s.y - sisH + (canvas.height * 0.01);
+          const pedX = sx + sisW * 0.4;
+          const pedY = sy - pedH * 0.7;
+
+          atualizarPedrasCaindo(sx, sy, sisW, sisH); // colisão personagem
+          atualizarPedrasCaindo(pedX, pedY, pedW, pedH); // colisão pedra
+        }
+
 
         if (estado === ESTADOS.QUEDA) {
           const q = pQueda;
